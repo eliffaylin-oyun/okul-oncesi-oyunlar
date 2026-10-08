@@ -5,45 +5,66 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Okul Öncesi Oyunlar</title>
 <style>
+:root{
+  --sky:#cdeefc;--sky2:#e8f7ff;--grass:#bfe3a8;--ink:#33425e;
+  --coral:#ef6f6c;--coral-d:#c9514e;
+  --teal:#4fb6a8;--teal-d:#2f8f83;
+  --sun:#f2b632;--sun-d:#c4901d;
+}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;min-height:100vh;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#33425e;
-  background:linear-gradient(160deg,#fff4c9,#d8f1ff 55%,#e6ffe0);padding:5vmin 4vmin}
-header{text-align:center;margin-bottom:5vmin}
-h1{margin:0 0 1.5vmin;font-size:clamp(34px,7vmin,70px)}
-header p{margin:0;font-size:clamp(18px,3vmin,28px);font-weight:700}
-main{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:3vmin;max-width:1200px;margin:0 auto}
-a.card{display:flex;flex-direction:column;align-items:center;gap:1.5vmin;text-decoration:none;color:inherit;background:#fff;
-  border-radius:36px;padding:4vmin 3vmin;box-shadow:0 8px 0 rgba(0,0,0,.12);transition:transform .15s;text-align:center}
-a.card:active,a.card:hover{transform:translateY(-4px) scale(1.02)}
-.ic{font-size:clamp(70px,14vmin,130px);line-height:1}
-.nm{font-size:clamp(24px,4.4vmin,40px);font-weight:800}
-.ds{font-size:clamp(16px,2.6vmin,22px);font-weight:600;opacity:.85}
-.c1{background:#ffe3e3}.c2{background:#e1f5d9}.c3{background:#d9ecff}
-footer{text-align:center;margin-top:5vmin;font-size:15px;font-weight:600;opacity:.7}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;font-weight:800;color:var(--ink);
+  background:linear-gradient(var(--sky) 0%,var(--sky2) 55%,var(--grass) 55.1%,var(--grass) 100%) fixed;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:max(28px,env(safe-area-inset-top)) 20px max(36px,env(safe-area-inset-bottom));
+}
+h1{margin:8px 0 6px;font-size:clamp(40px,8vw,84px);line-height:1.05;text-align:center}
+.sub{margin:0 0 clamp(24px,5vw,48px);font-size:clamp(20px,3.2vw,32px);text-align:center}
+.games{
+  list-style:none;margin:0;padding:0;width:100%;max-width:1100px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:clamp(18px,3vw,34px);
+}
+.game{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  min-height:clamp(220px,32vw,340px);padding:24px 18px;text-decoration:none;color:#fff;text-align:center;
+  border-radius:44px;background:var(--c);box-shadow:0 14px 0 var(--d);
+  transition:transform .15s,box-shadow .15s;
+}
+.game:hover{transform:translateY(-4px)}
+.game:active{transform:translateY(10px);box-shadow:0 4px 0 var(--d)}
+.game:focus-visible{outline:6px solid var(--ink);outline-offset:6px}
+.emoji{font-size:clamp(84px,14vw,140px);line-height:1;filter:drop-shadow(0 6px 0 rgba(0,0,0,.15))}
+.name{font-size:clamp(28px,4.4vw,44px);line-height:1.1;text-shadow:0 3px 0 rgba(0,0,0,.2)}
+.play{
+  margin-top:6px;padding:8px 30px;border-radius:40px;background:#fff;color:var(--ink);font-size:clamp(22px,3vw,30px);
+}
+.g1{--c:var(--coral);--d:var(--coral-d)}
+.g2{--c:var(--teal);--d:var(--teal-d)}
+.g3{--c:var(--sun);--d:var(--sun-d)}
+@media (prefers-reduced-motion:reduce){.game{transition:none}}
 </style>
 </head>
 <body>
-<header>
-  <h1>🎈 Okul Öncesi Oyunlar</h1>
-  <p>Bir oyun seç ve oynamaya başla!</p>
-</header>
-<main>
-  <a class="card c1" href="oyunlar/kasif-treni.html">
-    <span class="ic">🚂</span>
-    <span class="nm">Minik Kaşif Treni</span>
-    <span class="ds">Benzer, aynı, canlı: ortak özelliği bul</span>
-  </a>
-  <a class="card c2" href="oyunlar/sihirli-ayna.html">
-    <span class="ic">🪞</span>
-    <span class="nm">Sihirli Ayna İkizleri</span>
-    <span class="ds">Aynı, farklı, konum: eksik parçayı yerine koy</span>
-  </a>
-  <a class="card c3" href="oyunlar/minik-dedektifler.html">
-    <span class="ic">🔍</span>
-    <span class="nm">Minik Dedektifler</span>
-    <span class="ds">Aynı, farklı, benzer, canlı, konum, ipucu</span>
-  </a>
-</main>
-<footer>Reklamsız, veri toplamayan eğitsel oyunlar</footer>
+  <h1>Oyun zamanı!</h1>
+  <p class="sub">Bir oyun seç ve başla.</p>
+
+  <ul class="games">
+    <li><a class="game g1" href="kasiftreni/">
+      <span class="emoji" aria-hidden="true">🚂</span>
+      <span class="name">Minik Kaşif Treni</span>
+      <span class="play">Oyna</span>
+    </a></li>
+    <li><a class="game g2" href="minikdedektif/">
+      <span class="emoji" aria-hidden="true">🔍</span>
+      <span class="name">Minik Dedektif</span>
+      <span class="play">Oyna</span>
+    </a></li>
+    <li><a class="game g3" href="sihirliayna/">
+      <span class="emoji" aria-hidden="true">🪞</span>
+      <span class="name">Sihirli Ayna</span>
+      <span class="play">Oyna</span>
+    </a></li>
+  </ul>
 </body>
 </html>
