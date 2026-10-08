@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Minik Kaşif Treni</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#cdeefc;overscroll-behavior:none;touch-action:none}
+body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;font-weight:800;color:#33425e}
+button{font-family:inherit;font-weight:800;cursor:pointer;border:0;color:inherit}
+
+#viewport{position:fixed;inset:0;overflow:hidden;background:#cdeefc}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;overflow:hidden;
+  background:linear-gradient(#bfe9fb 0%,#e8f7ff 45%,#fff6dc 58%,#cfeab9 58.1%,#bfe3a8 100%)}
+
+/* arka plan */
+.cloud{position:absolute;background:#fff;border-radius:100px;opacity:.9;animation:drift linear infinite}
+.cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.cloud::before{width:46%;height:150%;left:14%;top:-70%}
+.cloud::after{width:36%;height:120%;right:14%;top:-45%}
+@keyframes drift{from{transform:translateX(-300px)}to{transform:translateX(2300px)}}
+#hills{position:absolute;left:0;top:380px;width:1920px;height:260px}
+#rail{position:absolute;left:0;top:628px;width:1920px;height:12px;background:#8f7f73;border-radius:6px}
+#sleepers{position:absolute;left:0;top:640px;width:1920px;height:20px;background:repeating-linear-gradient(90deg,#b49b84 0 46px,transparent 46px 92px)}
+
+/* üst alan */
+#sign{position:absolute;left:50px;top:30px;width:320px;height:170px;background:#d9a066;border:8px solid #b57a41;border-radius:28px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#fff;box-shadow:0 8px 0 rgba(0,0,0,.12)}
+#signTxt{font-size:46px;text-shadow:0 3px 0 rgba(0,0,0,.2)}
+#prog{display:flex;gap:10px}
+#prog span{width:30px;height:30px;border-radius:50%;background:#f3d9b6;box-shadow:inset 0 0 0 4px #b57a41;font-size:20px;line-height:30px;text-align:center}
+#prog span.on{background:#ffd54a}
+#bubble{position:absolute;left:400px;top:28px;width:1010px;min-height:170px;background:#fff;border-radius:44px;padding:26px 40px 26px 150px;
+  box-shadow:0 8px 0 rgba(0,0,0,.1);display:flex;align-items:center;font-size:54px;line-height:1.2}
+#bubble .face{position:absolute;left:30px;top:50%;transform:translateY(-50%);font-size:92px}
+#bubble::after{content:"";position:absolute;left:90px;bottom:-34px;border:30px solid transparent;border-top-color:#fff;border-bottom:0}
+.rb{position:absolute;top:40px;width:130px;height:130px;border-radius:50%;background:#fff;font-size:64px;box-shadow:0 8px 0 rgba(0,0,0,.12)}
+.rb:active{transform:translateY(5px);box-shadow:0 3px 0 rgba(0,0,0,.12)}
+#btnSound{right:40px}#btnFull{right:190px}#btnReplay{right:340px}
+
+/* tren */
+#train{position:absolute;left:50px;top:230px;width:1820px;height:410px;transform:translateX(-2100px)}
+#train *{position:absolute}
+.wheel{border-radius:50%;background:#34466b;box-shadow:inset 0 0 0 9px #34466b,inset 0 0 0 16px #5b73a3}
+.wheel::before{content:"";inset:30%;border-radius:50%;background:#ffd54a}
+.wheel::after{content:"";inset:12%;border-radius:50%;
+  background:linear-gradient(#ffd54a,#ffd54a) center/86% 8% no-repeat,linear-gradient(#ffd54a,#ffd54a) center/8% 86% no-repeat}
+.running .wheel{animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.running .bob{animation:bob .3s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translateY(5px)}}
+.coupler{background:#34466b;height:18px;border-radius:9px;top:292px}
+.eng-cabin{left:0;top:40px;width:180px;height:300px;background:#d9544f;border-radius:34px 34px 14px 14px}
+.eng-roof{left:-14px;top:22px;width:208px;height:36px;background:#34466b;border-radius:18px}
+.eng-win{left:34px;top:92px;width:112px;height:104px;background:#e9f7ff;border-radius:20px;box-shadow:0 0 0 8px #34466b}
+.eng-boiler{left:150px;top:130px;width:250px;height:210px;background:#ef6f6c;border-radius:30px 110px 30px 30px}
+.eng-stripe{left:150px;top:300px;width:250px;height:22px;background:#ffd54a}
+.chimney{left:288px;top:50px;width:72px;height:96px;background:#34466b;border-radius:10px 10px 6px 6px}
+.chimney::before{content:"";left:-14px;top:-16px;width:100px;height:26px;background:#34466b;border-radius:14px}
+.eye{width:50px;height:50px;border-radius:50%;background:#fff;top:160px}
+.eye::after{content:"";left:18px;top:14px;width:24px;height:24px;border-radius:50%;background:#2b2f45}
+.smile{left:268px;top:224px;width:96px;height:44px;border-bottom:11px solid #7a2e2e;border-radius:0 0 100px 100px}
+.cheek{width:34px;height:34px;border-radius:50%;background:#ff9fa0;top:214px;opacity:.8}
+.light{left:372px;top:170px;width:34px;height:34px;border-radius:50%;background:#ffe27a;box-shadow:0 0 22px #ffe27a}
+.puff{width:60px;height:60px;border-radius:50%;background:#fff;opacity:0;left:305px;top:20px}
+.running .puff,.steaming .puff{animation:steam 1.5s ease-out infinite}
+.puff:nth-of-type(2){animation-delay:.5s!important}.puff:nth-of-type(3){animation-delay:1s!important}
+@keyframes steam{0%{opacity:.9;transform:translate(0,0) scale(.5)}100%{opacity:0;transform:translate(-70px,-150px) scale(1.9)}}
+.wagon{border-radius:34px;top:80px;height:260px}
+.wagon::before{content:"";left:-10px;top:-20px;right:-10px;height:34px;border-radius:20px;background:rgba(0,0,0,.18)}
+#w1{left:440px;width:900px;background:#4fb6a8}
+#w2{left:1380px;width:440px;background:#ffc857}
+.win{top:30px;width:240px;height:200px;border-radius:26px;background:#e9f7ff;box-shadow:inset 0 8px 16px rgba(0,0,0,.14),0 0 0 10px #2f8f83;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.win .em,#slot .em{position:static;font-size:110px;line-height:1;transform:scale(0)}
+.win .nm,#slot .nm{position:static;font-size:38px;margin-top:8px;opacity:0;color:#33425e}
+.win.show .em{animation:pop .5s forwards}.win.show .nm{opacity:1}
+.win.look{animation:look .9s}
+.win.glow{box-shadow:inset 0 8px 16px rgba(0,0,0,.14),0 0 0 10px #ffd54a,0 0 40px #ffd54a}
+@keyframes look{0%,100%{transform:scale(1)}40%{transform:scale(1.1)}}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+#slot{left:50px;top:30px;width:340px;height:200px;border-radius:26px;border:8px dashed #fff;background:rgba(255,255,255,.35);display:flex;flex-direction:column;align-items:center;justify-content:center}
+#slot .q{position:static;font-size:110px;color:#fff;animation:blink 1.4s infinite}
+#slot .em{font-size:92px;animation:pop .5s forwards}#slot .nm{font-size:44px;opacity:1}
+#slot.full{background:#fff;border:8px solid #fff;box-shadow:0 0 0 8px #e0a82e}
+@keyframes blink{50%{opacity:.35}}
+.wiggle{animation:wig .8s}
+@keyframes wig{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+
+/* cevap kartları */
+.card{position:absolute;width:480px;height:250px;border-radius:44px;background:#fff;box-shadow:0 12px 0 rgba(0,0,0,.14);
+  display:flex;align-items:center;justify-content:center;gap:26px;touch-action:none;cursor:grab;z-index:5;
+  border:10px solid var(--c);opacity:0;transform:translateY(60px) scale(.8)}
+.card.in{opacity:1;transform:none;transition:opacity .4s,transform .45s cubic-bezier(.2,1.4,.4,1)}
+.card .em{font-size:118px;line-height:1}
+.card .tx{font-size:56px;line-height:1.05;max-width:230px;text-align:left}
+.card.snap{transition:left .35s ease,top .35s ease,transform .35s,opacity .4s}
+.card.drag{z-index:20;transform:scale(1.07)!important;box-shadow:0 26px 40px rgba(0,0,0,.25);cursor:grabbing;transition:none!important}
+.card.dim{opacity:.22!important;filter:grayscale(1);pointer-events:none}
+.card.gone{opacity:0!important;pointer-events:none;transition:opacity .4s}
+.card.fly{transform:scale(.62)!important;transition:left .55s ease,top .55s ease,transform .55s!important}
+.card.hint{animation:hint 1s infinite}
+@keyframes hint{50%{transform:scale(1.07)}}
+.shake{animation:shake .45s}
+@keyframes shake{0%,100%{margin-left:0}20%{margin-left:-14px}40%{margin-left:14px}60%{margin-left:-9px}80%{margin-left:9px}}
+
+.spark{position:absolute;font-size:56px;pointer-events:none;z-index:30}
+
+/* ekranlar */
+.screen{position:absolute;inset:0;z-index:50;background:rgba(205,238,252,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;text-align:center}
+.screen h1{margin:0;font-size:120px;line-height:1.05}
+.screen p{margin:0;font-size:48px;max-width:1300px;line-height:1.25}
+.big{background:#ffd54a;border-radius:70px;font-size:90px;padding:30px 110px;box-shadow:0 14px 0 #d9a900}
+.big:active{transform:translateY(8px);box-shadow:0 6px 0 #d9a900}
+.hidden{display:none!important}
+#endStars{font-size:100px}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="stage">
+  <div class="cloud" style="top:240px;left:0;width:260px;height:70px;animation-duration:110s"></div>
+  <div class="cloud" style="top:330px;left:0;width:200px;height:56px;animation-duration:150s;animation-delay:-60s"></div>
+  <div class="cloud" style="top:210px;left:0;width:300px;height:80px;animation-duration:190s;animation-delay:-120s"></div>
+  <svg id="hills" viewBox="0 0 1920 260" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 260V140C220 40 440 40 640 130C820 210 980 60 1200 70C1420 80 1560 190 1920 100V260Z" fill="#b9e0a1"/>
+    <path d="M0 260V190C260 110 520 130 760 190C1000 250 1240 110 1500 150C1700 180 1820 150 1920 170V260Z" fill="#a5d68f"/>
+  </svg>
+  <div id="rail"></div><div id="sleepers"></div>
+
+  <div id="sign"><div id="signTxt">🚉 İstasyon 1</div><div id="prog"></div></div>
+  <div id="bubble"><span class="face">🧑‍✈️</span><span id="bubbleText">&nbsp;</span></div>
+  <button class="rb" id="btnReplay" aria-label="Tekrar dinle">🔁</button>
+  <button class="rb" id="btnFull" aria-label="Tam ekran">⛶</button>
+  <button class="rb" id="btnSound" aria-label="Ses aç/kapat">🔊</button>
+
+  <div id="train">
+    <div class="puff"></div><div class="puff"></div><div class="puff"></div>
+    <div class="eng-roof"></div><div class="eng-cabin"></div><div class="eng-win"></div>
+    <div class="eng-boiler"></div><div class="eng-stripe"></div><div class="chimney"></div>
+    <div class="eye" style="left:238px"></div><div class="eye" style="left:304px"></div>
+    <div class="cheek" style="left:226px"></div><div class="cheek" style="left:342px"></div>
+    <div class="smile"></div><div class="light"></div>
+    <div class="coupler" style="left:396px;width:50px"></div>
+    <div class="wagon" id="w1"></div>
+    <div class="coupler" style="left:1336px;width:50px"></div>
+    <div class="wagon" id="w2"><div id="slot"><span class="q">?</span></div></div>
+    <div class="wheel" style="left:30px;top:270px;width:130px;height:130px"></div>
+    <div class="wheel" style="left:190px;top:290px;width:110px;height:110px"></div>
+    <div class="wheel" style="left:310px;top:290px;width:110px;height:110px"></div>
+    <div class="wheel" style="left:500px;top:290px;width:110px;height:110px"></div>
+    <div class="wheel" style="left:1170px;top:290px;width:110px;height:110px"></div>
+    <div class="wheel" style="left:1440px;top:290px;width:110px;height:110px"></div>
+    <div class="wheel" style="left:1650px;top:290px;width:110px;height:110px"></div>
+  </div>
+
+  <div id="start" class="screen">
+    <h1>🚂 Minik Kaşif Treni</h1>
+    <p>Trenle istasyonlara gidelim, ortak özellikleri keşfedelim!</p>
+    <button class="big" id="btnStart">▶ Başla</button>
+  </div>
+  <div id="end" class="screen hidden">
+    <h1>🏆 Tebrikler!</h1>
+    <div id="endStars">⭐⭐⭐⭐⭐⭐</div>
+    <p>Bütün istasyonları gezdin, küçük kaşif!</p>
+    <button class="big" id="btnAgain">🔁 Tekrar oyna</button>
+  </div>
+</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+var stage=$('#stage'),train=$('#train'),w1=$('#w1'),slot=$('#slot'),bubbleText=$('#bubbleText');
+var scale=1;
+function fit(){scale=Math.min(window.innerWidth/1920,window.innerHeight/1080);stage.style.transform='translate(-50%,-50%) scale('+scale+')'}
+window.addEventListener('resize',fit);fit();
+document.addEventListener('contextmenu',function(e){e.preventDefault()});
+
+function sh(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+
+/* ---------- İÇERİK ---------- */
+var ROUNDS=[
+ {tag:'diger',objs:[['🐦','Kuş'],['🦋','Kelebek'],['✈️','Uçak']],ans:['☁️','Uçar'],bad:[['🌊','Yüzer'],['🚶','Yürür']],why:'Hepsi uçar.'},
+ {tag:'diger',objs:[['🐟','Balık'],['🐬','Yunus'],['🐙','Ahtapot']],ans:['🌊','Suda yaşar'],bad:[['☁️','Uçar'],['🌳','Ağaçta yaşar']],why:'Hepsi suda yaşar.'},
+ {tag:'renk',objs:[['🍎','Elma'],['🍓','Çilek'],['🍒','Kiraz']],ans:['🔴','Kırmızı'],bad:[['🔵','Mavi'],['🟢','Yeşil']],why:'Hepsi aynı renk. Hepsi kırmızı.'},
+ {tag:'canli',objs:[['🌻','Çiçek'],['🐱','Kedi'],['🐝','Arı']],ans:['💚','Canlı'],bad:[['🪨','Canlı değil'],['🛞','Tekerlekleri var']],why:'Hepsi canlı.'},
+ {tag:'diger',objs:[['🚗','Araba'],['🚌','Otobüs'],['🚲','Bisiklet']],ans:['🛞','Tekerlekleri var'],bad:[['🕊️','Kanatları var'],['🌊','Yüzer']],why:'Hepsinin tekerlekleri var.'},
+ {tag:'diger',objs:[['⚽','Top'],['🍊','Portakal'],['🌕','Ay']],ans:['⚪','Yuvarlak'],bad:[['🟦','Kare'],['🔺','Üçgen']],why:'Hepsi yuvarlak.'},
+ {tag:'canli',objs:[['🪑','Sandalye'],['📚','Kitap'],['🔑','Anahtar']],ans:['🪨','Canlı değil'],bad:[['💚','Canlı'],['☁️','Uçar']],why:'Hiçbiri canlı değil.'},
+ {tag:'diger',objs:[['🐶','Köpek'],['🐮','İnek'],['🐑','Koyun']],ans:['🐾','Dört ayağı var'],bad:[['🕊️','Kanatları var'],['🌊','Yüzer']],why:'Hepsinin dört ayağı var.'},
+ {tag:'renk',objs:[['🍌','Muz'],['🌞','Güneş'],['🌻','Ayçiçeği']],ans:['🟡','Sarı'],bad:[['🟣','Mor'],['⚫','Siyah']],why:'Hepsi aynı renk. Hepsi sarı.'}
+];
+var PER_GAME=6;
+var COLORS=['#ef6f6c','#4fb6a8','#f2b632'];
+var QUESTION='Bir bakalım... Bu üçünün ortak özelliği ne olabilir?';
+var PRAISE=['Harika! Ortak özelliklerini buldun!','Bravo! Çok güzel buldun!','Süper! Doğru bildin!'];
+var RETRY=['Tekrar bakalım. Sence hangisi olabilir?','Hmm, bir daha bakalım.','Olmadı, birlikte tekrar düşünelim.'];
+
+function buildRounds(){
+  var canli=ROUNDS.filter(function(r){return r.tag==='canli'});
+  var renk=sh(ROUNDS.filter(function(r){return r.tag==='renk'})).slice(0,1);
+  var chosen=canli.concat(renk);
+  var rest=sh(ROUNDS.filter(function(r){return chosen.indexOf(r)<0}));
+  while(chosen.length<PER_GAME&&rest.length)chosen.push(rest.shift());
+  return sh(chosen);
+}
+
+/* ---------- SES ---------- */
+var soundOn=true,ttsOk='speechSynthesis' in window,voice=null,ac=null;
+function loadVoice(){if(!ttsOk)return;try{var v=speechSynthesis.getVoices();voice=null;for(var i=0;i<v.length;i++){if(v[i].lang&&v[i].lang.toLowerCase().indexOf('tr')===0){voice=v[i];break}}}catch(e){}}
+if(ttsOk){loadVoice();try{speechSynthesis.onvoiceschanged=loadVoice}catch(e){}}
+function audio(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){ac=null}return ac}
+function tone(f,d,t0,type,vol,f2){var a=audio();if(!a||!soundOn)return;try{var o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,a.currentTime+t0);if(f2)o.frequency.linearRampToValueAtTime(f2,a.currentTime+t0+d);g.gain.setValueAtTime(vol||.12,a.currentTime+t0);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t0+d);o.connect(g);g.connect(a.destination);o.start(a.currentTime+t0);o.stop(a.currentTime+t0+d)}catch(e){}}
+function whistle(){tone(660,.35,0,'triangle',.14,700);tone(880,.35,0,'triangle',.1,930);tone(660,.5,.4,'triangle',.14,620);tone(880,.5,.4,'triangle',.1,840)}
+function ding(){tone(523,.25,0,'sine',.15);tone(659,.25,.13,'sine',.15);tone(784,.45,.26,'sine',.15)}
+function oops(){tone(330,.22,0,'triangle',.09,260)}
+var chugT=null;
+function chugBurst(){var a=audio();if(!a||!soundOn)return;try{var n=Math.floor(a.sampleRate*.12),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(var i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);var s=a.createBufferSource();s.buffer=b;var f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=500;var g=a.createGain();g.gain.value=.25;s.connect(f);f.connect(g);g.connect(a.destination);s.start()}catch(e){}}
+function startChug(){stopChug();chugBurst();chugT=setInterval(chugBurst,260)}
+function stopChug(){if(chugT){clearInterval(chugT);chugT=null}}
+
+var epoch=0;
+function say(text){
+  bubbleText.textContent=text;
+  return new Promise(function(res){
+    var done=false,est=900+text.length*75,tm=null;
+    function fin(){if(!done){done=true;clearTimeout(tm);res()}}
+    if(!soundOn||!ttsOk){tm=setTimeout(fin,est);return}
+    tm=setTimeout(fin,est*2.2);
+    try{
+      speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(text);
+      u.lang='tr-TR';if(voice)u.voice=voice;u.rate=.88;u.pitch=1.15;
+      u.onend=fin;u.onerror=fin;
+      speechSynthesis.speak(u);
+    }catch(e){fin()}
+  });
+}
+function stopSpeech(){if(ttsOk){try{speechSynthesis.cancel()}catch(e){}}}
+
+/* ---------- OYUN DURUMU ---------- */
+var rounds=[],idx=0,lock=true,wrongCount=0,idleT=null,trainAnim=null,drag=null,cards=[];
+
+function buildProgress(){
+  var p=$('#prog');p.innerHTML='';
+  for(var i=0;i<rounds.length;i++){var s=document.createElement('span');p.appendChild(s)}
+}
+function markProgress(i){var s=$('#prog').children[i];if(s){s.className='on';s.textContent='⭐'}}
+
+function resetScene(){
+  cards.forEach(function(c){c.remove()});cards=[];
+  w1.innerHTML='';
+  var r=rounds[idx];
+  r.objs.forEach(function(o,i){
+    var d=document.createElement('div');d.className='win';d.style.left=(40+i*270)+'px';
+    d.innerHTML='<div class="em">'+o[0]+'</div><div class="nm">'+o[1]+'</div>';
+    w1.appendChild(d);
+  });
+  slot.className='';slot.innerHTML='<span class="q">?</span>';
+  $('#signTxt').textContent='🚉 İstasyon '+(idx+1);
+}
+
+function trainArrive(){
+  if(trainAnim){try{trainAnim.cancel()}catch(e){}}
+  train.classList.remove('steaming');train.classList.add('running');startChug();
+  trainAnim=train.animate([{transform:'translateX(-2100px)'},{transform:'translateX(0)'}],{duration:2800,easing:'cubic-bezier(.15,.75,.3,1)',fill:'forwards'});
+  return trainAnim.finished.catch(function(){}).then(function(){stopChug();train.classList.remove('running');train.classList.add('steaming');whistle()});
+}
+function trainDepart(){
+  train.classList.remove('steaming');train.classList.add('running');whistle();startChug();
+  if(trainAnim){try{trainAnim.cancel()}catch(e){}}
+  trainAnim=train.animate([{transform:'translateX(0)'},{transform:'translateX(2100px)'}],{duration:2200,easing:'cubic-bezier(.5,0,.9,.5)',fill:'forwards'});
+  return trainAnim.finished.catch(function(){}).then(function(){stopChug();train.classList.remove('running')});
+}
+
+async function playRound(){
+  var my=epoch,r=rounds[idx];
+  lock=true;wrongCount=0;clearIdle();
+  resetScene();
+  await trainArrive();if(my!==epoch)return;
+  await say('Haydi bakalım, bu üçüne dikkatlice bakalım.');if(my!==epoch)return;
+  var wins=w1.children;
+  for(var i=0;i<wins.length;i++){
+    wins[i].classList.add('show','look');
+    await say(r.objs[i][1]+'.');if(my!==epoch)return;
+    await wait(250);if(my!==epoch)return;
+  }
+  await say(QUESTION);if(my!==epoch)return;
+  showCards(r);lock=false;startIdle();
+}
+
+function showCards(r){
+  var opts=sh([{e:r.ans[0],t:r.ans[1],ok:1}].concat(r.bad.map(function(b){return{e:b[0],t:b[1],ok:0}})));
+  var xs=[100,720,1340];
+  opts.forEach(function(o,i){
+    var c=document.createElement('div');c.className='card';
+    c.style.left=xs[i]+'px';c.style.top='770px';c.style.setProperty('--c',COLORS[i]);
+    c.dataset.ok=o.ok;c.dataset.hx=xs[i];c.dataset.hy=770;
+    c.innerHTML='<span class="em">'+o.e+'</span><span class="tx">'+o.t+'</span>';
+    c.addEventListener('pointerdown',down);c.addEventListener('pointermove',move);
+    c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+    stage.appendChild(c);cards.push(c);
+    setTimeout(function(){c.classList.add('in')},120+i*160);
+  });
+}
+
+/* ---------- ETKİLEŞİM ---------- */
+function pt(e){var r=stage.getBoundingClientRect();return{x:(e.clientX-r.left)/scale,y:(e.clientY-r.top)/scale}}
+function down(e){
+  var c=e.currentTarget;
+  if(lock||drag||c.classList.contains('dim')||c.classList.contains('gone'))return;
+  e.preventDefault();clearIdle();
+  var p=pt(e);
+  drag={c:c,dx:p.x-c.offsetLeft,dy:p.y-c.offsetTop,sx:p.x,sy:p.y,moved:false,id:e.pointerId};
+  try{c.setPointerCapture(e.pointerId)}catch(err){}
+  c.classList.remove('snap');c.classList.add('drag');
+}
+function move(e){
+  if(!drag||drag.c!==e.currentTarget||e.pointerId!==drag.id)return;
+  var p=pt(e);
+  if(!drag.moved&&Math.hypot(p.x-drag.sx,p.y-drag.sy)>14)drag.moved=true;
+  if(drag.moved){drag.c.style.left=(p.x-drag.dx)+'px';drag.c.style.top=(p.y-drag.dy)+'px'}
+}
+function up(e){
+  if(!drag||drag.c!==e.currentTarget)return;
+  var d=drag,c=d.c;drag=null;
+  c.classList.remove('drag');
+  try{c.releasePointerCapture(d.id)}catch(err){}
+  if(e.type==='pointercancel'){snap(c);startIdle();return}
+  if(!d.moved){answer(c);return}
+  var cx=c.offsetLeft+c.offsetWidth/2,cy=c.offsetTop+c.offsetHeight/2;
+  if(cy>180&&cy<700)answer(c);else{snap(c);startIdle()}
+}
+function snap(c){
+  c.classList.add('snap');c.style.left=c.dataset.hx+'px';c.style.top=c.dataset.hy+'px';
+  setTimeout(function(){c.classList.remove('snap')},400);
+}
+function answer(c){c.dataset.ok==='1'?onCorrect(c):onWrong(c)}
+
+function onWrong(c){
+  wrongCount++;oops();snap(c);
+  c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');
+  setTimeout(function(){c.classList.add('dim')},450);
+  setTimeout(function(){
+    var left=cards.filter(function(x){return !x.classList.contains('dim')});
+    if(left.length===1)left[0].classList.add('hint');
+  },500);
+  say(rnd(RETRY));startIdle();
+}
+
+async function onCorrect(c){
+  var my=epoch,r=rounds[idx];
+  lock=true;clearIdle();
+  cards.forEach(function(x){x.classList.remove('hint');if(x!==c)x.classList.add('gone')});
+  var s=slot.getBoundingClientRect(),st=stage.getBoundingClientRect();
+  var tx=((s.left+s.width/2)-st.left)/scale,ty=((s.top+s.height/2)-st.top)/scale;
+  c.classList.remove('snap');c.classList.add('fly');
+  c.style.left=(tx-c.offsetWidth/2)+'px';c.style.top=(ty-c.offsetHeight/2)+'px';
+  await wait(600);if(my!==epoch)return;
+  c.classList.add('gone');
+  slot.className='full';
+  slot.innerHTML='<div class="em">'+r.ans[0]+'</div><div class="nm">'+r.ans[1]+'</div>';
+  burst(tx,ty);ding();markProgress(idx);
+  for(var i=0;i<w1.children.length;i++)w1.children[i].classList.add('glow');
+  await say(rnd(PRAISE)+' '+r.why);if(my!==epoch)return;
+  await wait(500);if(my!==epoch)return;
+  if(idx+1>=rounds.length){await finish();return}
+  await trainDepart();if(my!==epoch)return;
+  idx++;playRound();
+}
+
+function burst(x,y){
+  for(var i=0;i<14;i++){
+    var s=document.createElement('div');s.className='spark';s.textContent=rnd(['⭐','✨','🌟']);
+    s.style.left=x+'px';s.style.top=y+'px';stage.appendChild(s);
+    var a=Math.PI*2*i/14,d=170+Math.random()*120;
+    var an=s.animate([{transform:'translate(0,0) scale(.4)',opacity:1},{transform:'translate('+Math.cos(a)*d+'px,'+Math.sin(a)*d+'px) scale(1.2)',opacity:0}],{duration:900,easing:'ease-out'});
+    an.onfinish=(function(el){return function(){el.remove()}})(s);
+  }
+}
+
+async function finish(){
+  var my=epoch;
+  whistle();
+  $('#end').classList.remove('hidden');
+  await say('Tebrikler küçük kaşif! Bütün istasyonları gezdin!');
+  if(my!==epoch)return;
+}
+
+/* boşta kalınca yönlendirme */
+function startIdle(){
+  clearIdle();
+  idleT=setTimeout(async function(){
+    if(lock)return;var my=epoch;
+    for(var i=0;i<w1.children.length;i++){var w=w1.children[i];w.classList.remove('look');void w.offsetWidth;w.classList.add('look')}
+    await say('Biraz düşünelim... Üçüne tekrar bakalım.');
+    if(my===epoch&&!lock)startIdle();
+  },15000);
+}
+function clearIdle(){if(idleT){clearTimeout(idleT);idleT=null}}
+
+/* ---------- BAŞLAT / DÜĞMELER ---------- */
+async function startGame(){
+  epoch++;var my=epoch;
+  stopSpeech();stopChug();clearIdle();
+  rounds=buildRounds();idx=0;lock=true;
+  buildProgress();
+  $('#start').classList.add('hidden');$('#end').classList.add('hidden');
+  if(trainAnim){try{trainAnim.cancel()}catch(e){}}
+  train.style.transform='translateX(-2100px)';
+  cards.forEach(function(c){c.remove()});cards=[];
+  await say('Merhaba küçük kaşif! Haydi, trene biniyoruz!');
+  if(my!==epoch)return;
+  playRound();
+}
+$('#btnStart').addEventListener('click',function(){audio();startGame()});
+$('#btnAgain').addEventListener('click',function(){audio();startGame()});
+$('#btnSound').addEventListener('click',function(){
+  soundOn=!soundOn;this.textContent=soundOn?'🔊':'🔇';
+  if(!soundOn){stopSpeech();stopChug()}else audio();
+});
+$('#btnReplay').addEventListener('click',function(){if(!lock)say(QUESTION)});
+$('#bubble').addEventListener('click',function(){if(!lock)say(QUESTION)});
+$('#btnFull').addEventListener('click',function(){
+  try{
+    var d=document,el=d.documentElement;
+    if(!d.fullscreenElement&&!d.webkitFullscreenElement){(el.requestFullscreen||el.webkitRequestFullscreen).call(el)}
+    else{(d.exitFullscreen||d.webkitExitFullscreen).call(d)}
+  }catch(e){}
+});
+})();
+</script>
+</body>
+</html>
