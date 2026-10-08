@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sihirli Ayna İkizleri</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="viewport">
+<div id="stage">
+
+  <div id="title">🪞 Sihirli Ayna İkizleri</div>
+  <div id="prog"></div>
+  <button class="rb" id="btnFull" style="right:520px" aria-label="Tam ekran">⛶</button>
+  <button class="rb" id="btnHint" style="right:400px" aria-label="İpucu">💡</button>
+  <button class="rb" id="btnReplay" style="right:280px" aria-label="Tekrar dinle">🔁</button>
+  <button class="rb" id="btnSet" style="right:160px" aria-label="Ayarlar">⚙️</button>
+  <button class="rb" id="btnSound" style="right:40px" aria-label="Ses aç/kapat">🔊</button>
+
+  <div id="caption"><span class="who">🕵️</span><span id="capText">&nbsp;</span></div>
+
+  <div class="tag" id="tagL">Gerçek resim</div>
+  <div class="tag" id="tagR">Aynadaki ikiz</div>
+
+  <div class="frame" id="realFrame"><svg id="realSvg" viewBox="0 0 800 560"></svg><div class="shineov"></div></div>
+  <div id="mirrorC"><i style="top:60px;left:30px">✨</i><i style="top:250px;left:100px;animation-delay:-1s">✨</i><i style="top:430px;left:40px;animation-delay:-2s">✨</i></div>
+  <div class="frame" id="mirrorFrame"><svg id="mirrorSvg" viewBox="0 0 800 560"></svg><div class="shineov"></div></div>
+
+  <div id="tray"></div>
+
+  <div id="start" class="screen">
+    <h1>🪞 Sihirli Ayna</h1>
+    <p>İkiz resimlerden hangisi eksik?</p>
+    <button class="big" id="btnStart">✨ Keşfe Başla</button>
+  </div>
+
+  <div id="end" class="screen hidden">
+    <h1>🏆 Harika dedektif!</h1>
+    <div id="endStars">⭐⭐⭐</div>
+    <p>Sihirli ayna tamamen düzeldi!</p>
+    <button class="big" id="btnAgain">🔁 Tekrar oyna</button>
+  </div>
+
+  <div id="settings" class="screen hidden">
+    <h1 style="font-size:84px">⚙️ Ayarlar</h1>
+    <div class="row"><span class="lab">🔊 Ses</span>
+      <button class="opt" data-set="sound" data-v="1">Açık</button><button class="opt" data-set="sound" data-v="0">Kapalı</button></div>
+    <div class="row"><span class="lab">💡 Otomatik ipucu</span>
+      <button class="opt" data-set="help" data-v="1">Açık</button><button class="opt" data-set="help" data-v="0">Kapalı</button></div>
+    <div class="row"><span class="lab">🖼️ Resim sayısı</span>
+      <button class="opt" data-set="scenes" data-v="1">1</button><button class="opt" data-set="scenes" data-v="2">2</button><button class="opt" data-set="scenes" data-v="3">3</button></div>
+    <div class="row">
+      <button class="big small" id="btnRestart">🔄 Baştan başla</button>
+      <button class="big small" id="btnClose">✔ Tamam</button></div>
+  </div>
+
+</div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
