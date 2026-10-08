@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Minik Dedektifler</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{margin:0;height:100%}
+body{font-family:"Trebuchet MS","Comic Sans MS",system-ui,sans-serif;background:linear-gradient(160deg,#fff4c9,#d8f1ff 60%,#e6ffe0);color:#3a3a5c;overflow:hidden}
+#app{height:100dvh;display:flex;flex-direction:column}
+button{font-family:inherit;cursor:pointer;border:0}
+h1{margin:0;font-size:clamp(28px,6vmin,56px);text-align:center}
+
+/* HOME */
+#home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vmin;padding:2vmin;overflow:auto}
+#menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2vmin;width:min(900px,96vw)}
+.card{background:#fff;border-radius:28px;padding:2vmin 1vmin;box-shadow:0 6px 0 rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .15s}
+.card:active{transform:scale(.94)}
+.card .ic{font-size:clamp(44px,10vmin,84px);line-height:1}
+.card .nm{font-size:clamp(18px,3.4vmin,30px);font-weight:700}
+.c0{background:#ffe3e3}.c1{background:#fff0c9}.c2{background:#e1f5d9}.c3{background:#d9ecff}.c4{background:#efe1ff}.c5{background:#ffe6d1}.c6{background:#d9f7f3}
+details{max-width:min(900px,96vw);font-size:14px;background:#ffffffa8;border-radius:14px;padding:8px 14px}
+details summary{cursor:pointer;font-weight:700}
+details li{margin:4px 0}
+
+/* GAME */
+#game{display:none;flex:1;flex-direction:column;padding:1.5vmin 2vmin;gap:1.5vmin;min-height:0}
+#bar{display:flex;align-items:center;gap:2vmin}
+.rb{background:#fff;border-radius:50%;width:clamp(52px,9vmin,80px);height:clamp(52px,9vmin,80px);font-size:clamp(26px,5vmin,40px);box-shadow:0 4px 0 rgba(0,0,0,.12)}
+.rb:active{transform:scale(.92)}
+#ttl{flex:1;font-size:clamp(20px,4vmin,34px);font-weight:700;text-align:center}
+#dots{display:flex;gap:6px}
+#dots span{width:clamp(14px,2.6vmin,24px);height:clamp(14px,2.6vmin,24px);border-radius:50%;background:#fff;box-shadow:inset 0 0 0 3px #c9c9e0}
+#dots span.on{background:#ffc928;box-shadow:inset 0 0 0 3px #f0a500}
+#prompt{background:#fff;border-radius:22px;padding:1.4vmin 2vmin;text-align:center;font-size:clamp(20px,4.2vmin,36px);font-weight:700;box-shadow:0 4px 0 rgba(0,0,0,.1)}
+#stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vmin}
+
+.big{font-size:clamp(70px,20vmin,170px);line-height:1}
+.target{background:#fff;border-radius:30px;padding:1vmin 4vmin;box-shadow:0 6px 0 rgba(0,0,0,.12)}
+.opts{display:flex;flex-wrap:wrap;gap:2.2vmin;justify-content:center}
+.grid{display:grid;grid-template-columns:repeat(var(--c),auto);gap:2vmin;justify-content:center}
+.opt{background:#fff;border-radius:28px;box-shadow:0 7px 0 rgba(0,0,0,.14);font-size:clamp(46px,13vmin,110px);line-height:1;padding:1.4vmin 2.4vmin;min-width:clamp(80px,19vmin,160px);transition:transform .15s,opacity .5s,filter .5s}
+.opt:active{transform:scale(.92)}
+.opt.dim{opacity:.12;filter:grayscale(1);pointer-events:none;transform:scale(.8)}
+.opt.ok{background:#c9f7c0;box-shadow:0 0 0 6px #4cc24a;pointer-events:none}
+.shake{animation:shake .45s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-12px)}40%{transform:translateX(12px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
+.trio{display:flex;align-items:center;gap:2vmin;background:#fff;border-radius:30px;padding:1vmin 3vmin;box-shadow:0 6px 0 rgba(0,0,0,.12)}
+.trio .big{font-size:clamp(50px,14vmin,120px)}
+.clue{background:#fff7d6;border:5px dashed #f0b400;border-radius:26px;padding:2vmin 3vmin;font-size:clamp(24px,5vmin,44px);font-weight:700;text-align:center;min-width:min(700px,90vw)}
+.next{background:#ffd23f;border-radius:24px;font-size:clamp(20px,4vmin,32px);font-weight:700;padding:1.6vmin 4vmin;box-shadow:0 6px 0 #d8a800;color:#3a3a5c}
+.next:active{transform:translateY(4px);box-shadow:0 2px 0 #d8a800}
+.cell{width:clamp(70px,17vmin,140px);height:clamp(70px,17vmin,140px);border-radius:22px;background:#ffffff90;border:4px dashed #b8c4e6;font-size:clamp(40px,11vmin,92px);line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.cell.fixed{background:#fff;border:4px solid #fff;box-shadow:0 5px 0 rgba(0,0,0,.12)}
+.cnt{font-size:clamp(22px,4.4vmin,36px);font-weight:700}
+.endbtns{display:flex;gap:2vmin;flex-wrap:wrap;justify-content:center}
+.endbtns button{background:#fff;border-radius:26px;font-size:clamp(22px,4.4vmin,36px);font-weight:700;padding:2vmin 4vmin;box-shadow:0 6px 0 rgba(0,0,0,.14);color:#3a3a5c}
+
+#ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;z-index:9}
+#ov.show{display:flex}
+#ov .bubble{background:#fffffff2;border-radius:40px;padding:3vmin 6vmin;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.25);animation:pop .5s}
+#ov .st{font-size:clamp(70px,18vmin,150px)}
+#ov .tx{font-size:clamp(26px,6vmin,52px);font-weight:700}
+@keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+#toast{position:fixed;left:50%;bottom:5vmin;transform:translateX(-50%);background:#fff;border-radius:22px;padding:1.2vmin 3vmin;font-size:clamp(20px,4vmin,32px);font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.2);display:none;z-index:8}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="home">
+    <h1>🔍 Minik Dedektifler</h1>
+    <div id="menu"></div>
+    <details>
+      <summary>Veli / Öğretmen için: Kazanımlar</summary>
+      <ul>
+        <li><b>Aynı:</b> Nesneleri karşılaştırır.</li>
+        <li><b>Farklı:</b> Görsel ayrıntıları sistemli biçimde inceler; benzerlik ve farklılıkları görür.</li>
+        <li><b>Benzer:</b> Benzerlik ve farklılıklardan yararlanarak ortak özelliği belirler.</li>
+        <li><b>Canlı:</b> Nesne ve olgulara ilişkin çıkarımını söyler (canlı / canlı değil).</li>
+        <li><b>Konum:</b> Nesnelerin konumunu (üstünde, altında, solunda, sağında) belirler.</li>
+        <li><b>İpucu:</b> Verilen ipuçlarını seçeneklerle karşılaştırarak uygun olmayanları eler.</li>
+        <li><b>Dikkat:</b> Dikkatini belirli bir süre boyunca sürdürür.</li>
+      </ul>
+      <p>Oyunlarda süre baskısı, puan kaybı, reklam ve dış bağlantı yoktur. Yönergeler sesli okunur (cihazın Türkçe sesi gerekir).</p>
+    </details>
+  </div>
+
+  <div id="game">
+    <div id="bar">
+      <button class="rb" id="homeBtn" aria-label="Ana menü">🏠</button>
+      <div id="ttl"></div>
+      <div id="dots"></div>
+      <button class="rb" id="spk" aria-label="Tekrar dinle">🔊</button>
+    </div>
+    <div id="prompt"></div>
+    <div id="stage"></div>
+  </div>
+</div>
+<div id="ov"><div class="bubble"><div class="st">⭐</div><div class="tx" id="ovtx"></div></div></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+var TOTAL=5, cur=null, round=0, lock=false, repeatText='', G={};
+function $(s){return document.querySelector(s)}
+function sh(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function pick(a,n){return sh(a).slice(0,n)}
+
+/* ---------- SES ---------- */
+var voice=null, hasTTS='speechSynthesis' in window;
+function loadVoice(){if(!hasTTS)return;var v=speechSynthesis.getVoices();voice=null;for(var i=0;i<v.length;i++){if(v[i].lang&&v[i].lang.toLowerCase().indexOf('tr')===0){voice=v[i];break}}}
+if(hasTTS){loadVoice();speechSynthesis.onvoiceschanged=loadVoice}
+function speak(t){if(!hasTTS)return;try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.lang='tr-TR';if(voice)u.voice=voice;u.rate=.85;u.pitch=1.1;speechSynthesis.speak(u)}catch(e){}}
+var ac=null;
+function tone(f,d,t0,type,vol){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();var o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.value=vol||.15;o.connect(g);g.connect(ac.destination);var s=ac.currentTime+t0;g.gain.setValueAtTime(vol||.15,s);g.gain.exponentialRampToValueAtTime(.001,s+d);o.start(s);o.stop(s+d)}catch(e){}}
+function chime(ok){if(ok){tone(523,.25,0);tone(659,.25,.12);tone(784,.35,.24)}else{tone(300,.25,0,'triangle',.1);tone(240,.3,.12,'triangle',.1)}}
+function say(t,quiet){$('#prompt').textContent=t;repeatText=t;if(!quiet)speak(t)}
+function toast(t){var e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){e.style.display='none'},1300)}
+
+/* ---------- ORTAK ---------- */
+var POOL={
+ animals:['🐶','🐱','🐰','🐻','🦁','🐸','🐵','🐮','🐷','🐔'],
+ fruits:['🍎','🍌','🍇','🍓','🍊','🍉','🍒','🍐'],
+ things:['⚽','🚗','🎈','🪑','🏠','👟','🎒','🔑'],
+ shapes:['⭐','🔴','🔵','🟢','🟡','🟣']
+};
+var ALL=[].concat(POOL.animals,POOL.fruits,POOL.things,POOL.shapes);
+function btn(e,fn,cls){var b=document.createElement('button');b.className='opt'+(cls?' '+cls:'');b.textContent=e;b.onclick=function(){if(lock)return;fn(b)};return b}
+function wrong(b){chime(false);if(b){b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake')}toast('Tekrar dene 🙂');speak('Tekrar dene.')}
+var PRAISE=['Aferin!','Harika!','Çok güzel!','Bravo!','Süpersin!'];
+function win(msg){
+  lock=true;chime(true);
+  var m=PRAISE[Math.floor(Math.random()*PRAISE.length)]+(msg?' '+msg:'');
+  $('#ovtx').textContent=m;$('#ov').className='show';speak(m);
+  round++;dots();
+  setTimeout(function(){$('#ov').className='';lock=false;next()},2200);
+}
+function dots(){var d=$('#dots');d.innerHTML='';for(var i=0;i<TOTAL;i++){var s=document.createElement('span');if(i<round)s.className='on';d.appendChild(s)}}
+
+/* ---------- 1. AYNI ---------- */
+G.same={title:'Aynı',icon:'👯',render:function(st){
+  var t=pick(ALL,4),target=t[0];
+  say('Üstteki resmin aynısını bul.');
+  st.innerHTML='<div class="big target">'+target+'</div><div class="opts"></div>';
+  var o=st.querySelector('.opts');
+  sh(t).forEach(function(e){o.appendChild(btn(e,function(b){if(e===target)win('Aynısını buldun!');else wrong(b)}))});
+}};
+
+/* ---------- 2. FARKLI ---------- */
+var SIM=[['🍎','🍅'],['🐱','🐯'],['🌞','🌼'],['🍊','🏀'],['🐰','🐭'],['🐶','🐺'],['🍓','🍒'],['🐢','🐊'],['🌲','🌳'],['🌙','🍌']];
+G.odd={title:'Farklı',icon:'🔎',render:function(st){
+  var base,odd;
+  if(round<2){var p=pick(ALL,2);base=p[0];odd=p[1]}else{var q=sh(pick(SIM,1)[0]);base=q[0];odd=q[1]}
+  var n=[4,4,6,6,9][round],cols=n===4?2:3,oi=Math.floor(Math.random()*n);
+  say('Farklı olanı bul.');
+  st.innerHTML='<div class="grid" style="--c:'+cols+'"></div>';
+  var g=st.querySelector('.grid');
+  for(var i=0;i<n;i++){(function(i){g.appendChild(btn(i===oi?odd:base,function(b){if(i===oi){b.classList.add('ok');win('Farklı olanı buldun!')}else wrong(b)}))})(i)}
+}};
+
+/* ---------- 3. BENZER (ortak özellik) ---------- */
+var SIMR=[
+ {items:['🍎','🍓','🍒'],opts:['🍌','🥒','🍅','🐟'],ans:'🍅',why:'Hepsi kırmızı.'},
+ {items:['🚗','🚌','🚲'],opts:['🐶','✈️','🍎','🪑'],ans:'✈️',why:'Hepsi taşıt.'},
+ {items:['🍌','🌞','⭐'],opts:['🍎','🌻','🐸','🌳'],ans:'🌻',why:'Hepsi sarı.'},
+ {items:['⚽','🍊','🌕'],opts:['📺','🍪','🚪','🪑'],ans:'🍪',why:'Hepsi yuvarlak.'},
+ {items:['🐟','🐙','🐬'],opts:['🐶','🦀','🐦','🐮'],ans:'🦀',why:'Hepsi denizde yaşar.'}
+];
+G.alike={title:'Benzer',icon:'🤝',render:function(st){
+  var r=SIMR[round];
+  say('Bu resimlerin ortak bir özelliği var. Onlara benzeyeni bul.');
+  st.innerHTML='<div class="trio">'+r.items.map(function(e){return '<span class="big">'+e+'</span>'}).join('')+'<span class="big">❓</span></div><div class="opts"></div>';
+  var o=st.querySelector('.opts');
+  sh(r.opts).forEach(function(e){o.appendChild(btn(e,function(b){if(e===r.ans){b.classList.add('ok');win(r.why)}else wrong(b)}))});
+}};
+
+/* ---------- 4. CANLI ---------- */
+var LIVE=['🐶','🐱','🐟','🐦','🌳','🌻','🐝','🐢','🐰','🌷'];
+var NOT=['🚗','⚽','🪑','🏠','✏️','👟','🎈','⏰','🔑','🚲'];
+G.live={title:'Canlı',icon:'🌱',render:function(st){
+  var alive=[true,true,false,true,false][round];
+  var right=pick(alive?LIVE:NOT,1)[0],others=pick(alive?NOT:LIVE,3);
+  say(alive?'Canlı olanı bul.':'Canlı olmayanı bul.');
+  st.innerHTML='<div class="opts"></div>';
+  var o=st.querySelector('.opts');
+  sh([right].concat(others)).forEach(function(e){o.appendChild(btn(e,function(b){if(e===right){b.classList.add('ok');win(alive?'Bu canlı.':'Bu canlı değil.')}else wrong(b)}))});
+}};
+
+/* ---------- 5. KONUM ---------- */
+var OBJS=[{e:'🌳',g:'ağacın'},{e:'🏠',g:'evin'},{e:'🪑',g:'sandalyenin'},{e:'📦',g:'kutunun'}];
+var ANIM=[{e:'🐦',a:'Kuşu'},{e:'🐱',a:'Kediyi'},{e:'🐶',a:'Köpeği'},{e:'🐰',a:'Tavşanı'},{e:'🐞',a:'Uğur böceğini'}];
+var DIRS=[{i:1,w:'üstüne',p:'üstünde'},{i:7,w:'altına',p:'altında'},{i:3,w:'soluna',p:'solunda'},{i:5,w:'sağına',p:'sağında'}];
+G.place={title:'Konum',icon:'📍',render:function(st){
+  var ob=pick(OBJS,1)[0],an=pick(ANIM,1)[0],d=DIRS[(round+Math.floor(Math.random()*3))%4];
+  if(round===0)d=DIRS[0];
+  say(an.a+' '+ob.g+' '+d.w+' koy.');
+  st.innerHTML='<div class="grid" style="--c:3"></div>';
+  var g=st.querySelector('.grid');
+  for(var i=0;i<9;i++){(function(i){
+    var c=document.createElement('button');c.className='cell';
+    if(i===4){c.className+=' fixed';c.textContent=ob.e;c.onclick=function(){if(!lock)wrong(c)}}
+    else c.onclick=function(){
+      if(lock)return;
+      if(i===d.i){c.className='cell fixed';c.textContent=an.e;win(an.a.replace(/u$|i$|ı$/,function(m){return m})+' '+ob.g+' '+d.p+'.')}
+      else wrong(c)};
+    g.appendChild(c)})(i)}
+}};
+
+/* ---------- 6. İPUCU ---------- */
+var CLUES=[
+ {clues:['Canlıdır.','Kanatları var.','Gökyüzünde uçar.'],opts:[['🚗',0],['🐶',1],['🐧',2],['🐦',null]]},
+ {clues:['Yenir.','Meyvedir.','Kırmızıdır.'],opts:[['⚽',0],['🥕',1],['🍌',2],['🍎',null]]},
+ {clues:['Canlı değildir.','Tekerlekleri vardır.','Çok kişiyi taşır.'],opts:[['🐟',0],['🪑',1],['🚲',2],['🚌',null]]},
+ {clues:['Canlıdır.','Suda yaşar.','Pulları vardır.'],opts:[['🏠',0],['🐱',1],['🐸',2],['🐟',null]]},
+ {clues:['Canlıdır.','Toprakta büyür.','Sarı yaprakları vardır.'],opts:[['🚗',0],['🐶',1],['🌳',2],['🌻',null]]}
+];
+G.clue={title:'İpucu',icon:'💡',render:function(st){
+  var r=CLUES[round],k=-1,bs=[];
+  say('İpuçlarını dinle, olmayanları ele, doğru resmi bul.',true);
+  st.innerHTML='<div class="clue" id="clue"></div><div class="opts"></div><button class="next" id="nx">💡 Yeni ipucu</button>';
+  var o=st.querySelector('.opts'),nx=st.querySelector('#nx'),cl=st.querySelector('#clue');
+  sh(r.opts).forEach(function(x){
+    var b=btn(x[0],function(b){if(x[1]===null){b.classList.add('ok');win('İpuçlarına uyan bu.')}else wrong(b)});
+    b._d=x[1];bs.push(b);o.appendChild(b)});
+  function reveal(){
+    k++;cl.textContent='💡 '+r.clues[k];repeatText=r.clues[k];
+    speak((k===0?'İpuçlarını dinle. ':'')+r.clues[k]);
+    bs.forEach(function(b){if(b._d!==null&&b._d<=k)b.classList.add('dim')});
+    if(k>=r.clues.length-1)nx.style.display='none';
+  }
+  nx.onclick=function(){if(!lock)reveal()};
+  reveal();
+}};
+
+/* ---------- 7. DİKKAT (hepsini bul) ---------- */
+var FIND=[['🐞','🌸'],['⭐','🌙'],['🍎','🍌'],['🐱','🐶'],['🎈','⚽']];
+G.find={title:'Dikkat',icon:'🎯',render:function(st){
+  var f=FIND[round],need=[3,3,4,4,5][round],n=12,cols=window.innerWidth>window.innerHeight?4:3,found=0;
+  var idx=pick([0,1,2,3,4,5,6,7,8,9,10,11],need);
+  var nameT={'🐞':'uğur böceklerini','⭐':'yıldızları','🍎':'elmaları','🐱':'kedileri','🎈':'balonları'}[f[0]];
+  say('Bütün '+nameT+' bul.');
+  st.innerHTML='<div class="cnt" id="cn"></div><div class="grid" style="--c:'+cols+'"></div>';
+  var cn=st.querySelector('#cn'),g=st.querySelector('.grid');
+  function upd(){cn.textContent=f[0]+' '+found+' / '+need}
+  upd();
+  for(var i=0;i<n;i++){(function(i){
+    var isT=idx.indexOf(i)>-1;
+    var b=btn(isT?f[0]:f[1],function(b){
+      if(isT){if(b.classList.contains('ok'))return;b.classList.add('ok');found++;upd();chime(true);if(found===need)win('Hepsini buldun!')}
+      else wrong(b)});
+    b.style.fontSize='clamp(36px,10vmin,84px)';b.style.minWidth='clamp(64px,15vmin,120px)';
+    g.appendChild(b)})(i)}
+}};
+
+/* ---------- AKIŞ ---------- */
+var ORDER=['same','odd','alike','live','place','clue','find'];
+var COL=['c0','c1','c2','c3','c4','c5','c6'];
+function buildMenu(){
+  var m=$('#menu');m.innerHTML='';
+  ORDER.forEach(function(k,i){
+    var b=document.createElement('button');b.className='card '+COL[i];
+    b.innerHTML='<span class="ic">'+G[k].icon+'</span><span class="nm">'+G[k].title+'</span>';
+    b.onclick=function(){start(k)};m.appendChild(b)});
+}
+function start(k){
+  cur=k;round=0;lock=false;
+  $('#home').style.display='none';$('#game').style.display='flex';
+  $('#ttl').textContent=G[k].icon+' '+G[k].title;
+  dots();next();
+}
+function next(){
+  var st=$('#stage');st.innerHTML='';
+  if(round>=TOTAL){end();return}
+  G[cur].render(st);
+}
+function end(){
+  var st=$('#stage');
+  say('Tebrikler! Çok başarılıydın!');
+  st.innerHTML='<div class="big">🏆</div><div class="cnt">⭐ ⭐ ⭐ ⭐ ⭐</div><div class="endbtns"><button id="again">🔁 Tekrar oyna</button><button id="menuBtn">🏠 Diğer oyunlar</button></div>';
+  $('#again').onclick=function(){start(cur)};
+  $('#menuBtn').onclick=home;
+}
+function home(){
+  if(hasTTS)try{speechSynthesis.cancel()}catch(e){}
+  $('#ov').className='';lock=false;
+  $('#game').style.display='none';$('#home').style.display='flex';
+}
+$('#homeBtn').onclick=home;
+$('#spk').onclick=function(){speak(repeatText)};
+buildMenu();
+})();
+</script>
+</body>
+</html>
