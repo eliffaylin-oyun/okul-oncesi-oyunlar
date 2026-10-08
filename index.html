@@ -2,48 +2,61 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Okul Öncesi Oyunlar</title>
-<style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;min-height:100vh;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#33425e;
-  background:linear-gradient(160deg,#fff4c9,#d8f1ff 55%,#e6ffe0);padding:5vmin 4vmin}
-header{text-align:center;margin-bottom:5vmin}
-h1{margin:0 0 1.5vmin;font-size:clamp(34px,7vmin,70px)}
-header p{margin:0;font-size:clamp(18px,3vmin,28px);font-weight:700}
-main{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:3vmin;max-width:1200px;margin:0 auto}
-a.card{display:flex;flex-direction:column;align-items:center;gap:1.5vmin;text-decoration:none;color:inherit;background:#fff;
-  border-radius:36px;padding:4vmin 3vmin;box-shadow:0 8px 0 rgba(0,0,0,.12);transition:transform .15s;text-align:center}
-a.card:active,a.card:hover{transform:translateY(-4px) scale(1.02)}
-.ic{font-size:clamp(70px,14vmin,130px);line-height:1}
-.nm{font-size:clamp(24px,4.4vmin,40px);font-weight:800}
-.ds{font-size:clamp(16px,2.6vmin,22px);font-weight:600;opacity:.85}
-.c1{background:#ffe3e3}.c2{background:#e1f5d9}.c3{background:#d9ecff}
-footer{text-align:center;margin-top:5vmin;font-size:15px;font-weight:600;opacity:.7}
-</style>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sihirli Ayna İkizleri</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>🎈 Okul Öncesi Oyunlar</h1>
-  <p>Bir oyun seç ve oynamaya başla!</p>
-</header>
-<main>
-  <a class="card c1" href="oyunlar/kasif-treni.html">
-    <span class="ic">🚂</span>
-    <span class="nm">Minik Kaşif Treni</span>
-    <span class="ds">Benzer, aynı, canlı: ortak özelliği bul</span>
-  </a>
-  <a class="card c2" href="oyunlar/sihirli-ayna-ikizleri/index.html">
-    <span class="ic">🪞</span>
-    <span class="nm">Sihirli Ayna İkizleri</span>
-    <span class="ds">Aynı, farklı, konum: eksik parçayı yerine koy</span>
-  </a>
-  <a class="card c3" href="oyunlar/minik-dedektifler/index.html">
-    <span class="ic">🔍</span>
-    <span class="nm">Minik Dedektifler</span>
-    <span class="ds">Aynı, farklı, benzer, canlı, konum, ipucu</span>
-  </a>
-</main>
-<footer>Reklamsız, veri toplamayan eğitsel oyunlar</footer>
+<div id="viewport">
+<div id="stage">
+
+  <div id="title">🪞 Sihirli Ayna İkizleri</div>
+  <div id="prog"></div>
+  <button class="rb" id="btnFull" style="right:520px" aria-label="Tam ekran">⛶</button>
+  <button class="rb" id="btnHint" style="right:400px" aria-label="İpucu">💡</button>
+  <button class="rb" id="btnReplay" style="right:280px" aria-label="Tekrar dinle">🔁</button>
+  <button class="rb" id="btnSet" style="right:160px" aria-label="Ayarlar">⚙️</button>
+  <button class="rb" id="btnSound" style="right:40px" aria-label="Ses aç/kapat">🔊</button>
+
+  <div id="caption"><span class="who">🕵️</span><span id="capText">&nbsp;</span></div>
+
+  <div class="tag" id="tagL">Gerçek resim</div>
+  <div class="tag" id="tagR">Aynadaki ikiz</div>
+
+  <div class="frame" id="realFrame"><svg id="realSvg" viewBox="0 0 800 560"></svg><div class="shineov"></div></div>
+  <div id="mirrorC"><i style="top:60px;left:30px">✨</i><i style="top:250px;left:100px;animation-delay:-1s">✨</i><i style="top:430px;left:40px;animation-delay:-2s">✨</i></div>
+  <div class="frame" id="mirrorFrame"><svg id="mirrorSvg" viewBox="0 0 800 560"></svg><div class="shineov"></div></div>
+
+  <div id="tray"></div>
+
+  <div id="start" class="screen">
+    <h1>🪞 Sihirli Ayna</h1>
+    <p>İkiz resimlerden hangisi eksik?</p>
+    <button class="big" id="btnStart">✨ Keşfe Başla</button>
+  </div>
+
+  <div id="end" class="screen hidden">
+    <h1>🏆 Harika dedektif!</h1>
+    <div id="endStars">⭐⭐⭐</div>
+    <p>Sihirli ayna tamamen düzeldi!</p>
+    <button class="big" id="btnAgain">🔁 Tekrar oyna</button>
+  </div>
+
+  <div id="settings" class="screen hidden">
+    <h1 style="font-size:84px">⚙️ Ayarlar</h1>
+    <div class="row"><span class="lab">🔊 Ses</span>
+      <button class="opt" data-set="sound" data-v="1">Açık</button><button class="opt" data-set="sound" data-v="0">Kapalı</button></div>
+    <div class="row"><span class="lab">💡 Otomatik ipucu</span>
+      <button class="opt" data-set="help" data-v="1">Açık</button><button class="opt" data-set="help" data-v="0">Kapalı</button></div>
+    <div class="row"><span class="lab">🖼️ Resim sayısı</span>
+      <button class="opt" data-set="scenes" data-v="1">1</button><button class="opt" data-set="scenes" data-v="2">2</button><button class="opt" data-set="scenes" data-v="3">3</button></div>
+    <div class="row">
+      <button class="big small" id="btnRestart">🔄 Baştan başla</button>
+      <button class="big small" id="btnClose">✔ Tamam</button></div>
+  </div>
+
+</div>
+</div>
+<script src="script.js"></script>
 </body>
 </html>

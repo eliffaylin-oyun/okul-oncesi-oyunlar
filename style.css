@@ -1,0 +1,81 @@
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#d9d0f5;overscroll-behavior:none;touch-action:none}
+body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;font-weight:800;color:#3a3470}
+button{font-family:inherit;font-weight:800;cursor:pointer;border:0;color:inherit}
+
+#viewport{position:fixed;inset:0;overflow:hidden;background:#d9d0f5}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;overflow:hidden;
+  background:linear-gradient(160deg,#f4ecff 0%,#e4efff 55%,#fdf3dc 100%)}
+
+/* üst bar */
+#title{position:absolute;left:50px;top:24px;font-size:50px;line-height:80px;white-space:nowrap}
+#prog{position:absolute;left:760px;top:32px;height:64px;display:flex;align-items:center;gap:8px}
+#prog span{width:34px;height:34px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 4px #c9b8f5;font-size:22px;line-height:34px;text-align:center}
+#prog span.on{background:#ffd54a;box-shadow:inset 0 0 0 4px #e0a800}
+.rb{position:absolute;top:18px;width:100px;height:100px;border-radius:50%;background:#fff;font-size:50px;box-shadow:0 7px 0 rgba(0,0,0,.13)}
+.rb:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.13)}
+
+#caption{position:absolute;left:60px;top:128px;width:1800px;height:78px;background:#fff;border-radius:39px;box-shadow:0 6px 0 rgba(0,0,0,.09);
+  display:flex;align-items:center;padding:0 40px 0 24px;gap:20px;font-size:42px;line-height:1.1}
+#caption .who{font-size:58px}
+
+.tag{position:absolute;top:214px;width:300px;height:44px;line-height:44px;text-align:center;font-size:30px;border-radius:22px;color:#fff}
+#tagL{left:310px;background:#6fa8dc}
+#tagR{left:1310px;background:#d9a300}
+
+/* resim çerçeveleri */
+.frame{position:absolute;top:266px;width:800px;height:560px;border-radius:26px;overflow:hidden;touch-action:none}
+#realFrame{left:60px;box-shadow:0 0 0 12px #8ec5ff,0 14px 0 12px rgba(0,0,0,.1)}
+#mirrorFrame{left:1060px;box-shadow:0 0 0 14px #f4c542,0 0 60px 14px rgba(255,214,102,.65)}
+.frame svg{width:800px;height:560px;display:block}
+.frame.pulse{animation:fpulse 1.4s}
+@keyframes fpulse{0%,100%{transform:scale(1)}40%{transform:scale(1.03)}}
+.frame.swapin{animation:swapin .7s}
+@keyframes swapin{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+.shineov{position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.85) 50%,transparent 65%);transform:translateX(-100%)}
+.frame.shine .shineov{animation:shine 1.3s ease-in-out}
+@keyframes shine{0%{opacity:1;transform:translateX(-100%)}100%{opacity:1;transform:translateX(100%)}}
+
+#mirrorC{position:absolute;left:872px;top:258px;width:176px;height:576px;border-radius:88px/288px;border:14px solid #f4c542;
+  background:linear-gradient(135deg,rgba(255,255,255,.85),rgba(190,215,255,.55) 55%,rgba(255,255,255,.7));box-shadow:0 0 40px rgba(255,214,102,.7),inset 0 0 30px rgba(255,255,255,.9)}
+#mirrorC i{position:absolute;font-style:normal;font-size:44px;animation:twinkle 3s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.2)}}
+
+/* svg efektleri */
+.popin{animation:popin .6s both;transform-box:fill-box;transform-origin:center}
+@keyframes popin{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.ring{fill:none;stroke-width:9;stroke-dasharray:18 12;transform-box:fill-box;transform-origin:center}
+.ring.hint{stroke:#ff8a00;animation:rpulse 1s ease-in-out infinite}
+.ring.ok{stroke:#34b34a;stroke-dasharray:none;animation:rok 1.7s forwards}
+@keyframes rpulse{50%{transform:scale(1.18);opacity:.55}}
+@keyframes rok{0%{transform:scale(.4);opacity:0}25%{opacity:1}100%{transform:scale(1.2);opacity:0}}
+
+/* parça tepsisi */
+#tray{position:absolute;left:150px;top:852px;width:1620px;height:200px;border-radius:56px;background:rgba(255,255,255,.8);
+  box-shadow:0 8px 0 rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;gap:26px}
+.piece{width:164px;height:164px;border-radius:36px;background:#fff;border:8px solid #c9b8f5;box-shadow:0 7px 0 rgba(0,0,0,.12);touch-action:none;cursor:grab;position:relative}
+.piece svg{width:100%;height:100%;display:block;pointer-events:none}
+.piece.sel{border-color:#ffb400;box-shadow:0 0 0 8px rgba(255,180,0,.35),0 7px 0 rgba(0,0,0,.12);transform:translateY(-8px)}
+.piece.used{opacity:.22;filter:grayscale(1);pointer-events:none}
+.piece.dragging{opacity:.3}
+.piece.hint{animation:phint .9s ease-in-out infinite}
+@keyframes phint{50%{transform:scale(1.1);border-color:#ff8a00}}
+.piece.shake{animation:shake .45s}
+@keyframes shake{0%,100%{margin-left:0}20%{margin-left:-14px}40%{margin-left:14px}60%{margin-left:-9px}80%{margin-left:9px}}
+.ghost{position:absolute;width:190px;height:190px;pointer-events:none;z-index:40;transform:translate(-50%,-50%);filter:drop-shadow(0 18px 14px rgba(0,0,0,.28))}
+.ghost svg{width:100%;height:100%}
+.spark{position:absolute;font-size:54px;pointer-events:none;z-index:45}
+
+/* ekranlar */
+.screen{position:absolute;inset:0;z-index:60;background:rgba(236,226,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:36px;text-align:center}
+.screen h1{margin:0;font-size:128px;line-height:1.05}
+.screen p{margin:0;font-size:56px;max-width:1300px}
+.big{background:#ffd54a;border-radius:70px;font-size:86px;padding:30px 100px;box-shadow:0 14px 0 #d9a900}
+.big.small{font-size:50px;padding:22px 56px;box-shadow:0 9px 0 #d9a900}
+.big:active{transform:translateY(8px);box-shadow:0 5px 0 #d9a900}
+.row{display:flex;align-items:center;gap:26px}
+.lab{font-size:50px;min-width:520px;text-align:right}
+.opt{background:#fff;border-radius:40px;font-size:50px;padding:20px 56px;min-width:150px;box-shadow:0 8px 0 rgba(0,0,0,.14)}
+.opt.on{background:#ffd54a;box-shadow:0 8px 0 #d9a900}
+#endStars{font-size:110px}
+.hidden{display:none!important}
