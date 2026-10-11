@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kaşifin Kayıp Hazinesi</title>
+<style>
+:root{--ink:#2b3a1f;--leaf:#43a047;--leaf-d:#2e7d32;--gold:#ffb300;--wood:#5d4037;--cell:64px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:var(--ink);background:linear-gradient(#bfe8ff 0%,#e8f7d6 50%,#a5d86a 100%) fixed;font-size:18px;touch-action:manipulation}
+button{font-family:inherit;cursor:pointer;touch-action:manipulation}
+.screen{display:none;min-height:100vh}
+.screen.active{display:block}
+
+/* ---------- MENÜ & SON ---------- */
+.center{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:18px}
+.title{font-size:clamp(2rem,6vw,3.6rem);margin:0;color:#3e2723;text-shadow:0 3px 0 #fff,0 6px 12px rgba(0,0,0,.15);letter-spacing:1px}
+.sub{max-width:640px;font-size:clamp(1.15rem,3vw,1.5rem);line-height:1.5;margin:0;background:rgba(255,255,255,.75);padding:14px 20px;border-radius:20px}
+.big-btn{border:none;border-radius:28px;padding:18px 44px;font-size:clamp(1.4rem,4vw,2rem);font-weight:800;color:#fff;background:linear-gradient(#66bb6a,#2e7d32);box-shadow:0 8px 0 #1b5e20,0 14px 24px rgba(0,0,0,.25);transition:transform .1s}
+.big-btn:active{transform:translateY(5px);box-shadow:0 3px 0 #1b5e20}
+.big-btn.alt{background:linear-gradient(#ffca28,#f57c00);box-shadow:0 8px 0 #bf5b00,0 14px 24px rgba(0,0,0,.25)}
+.pill-btn{border:3px solid var(--wood);background:#fff8e1;border-radius:999px;padding:10px 20px;font-size:1.05rem;font-weight:700;color:var(--wood)}
+.scene{width:min(520px,90vw)}
+.floaty{animation:floaty 3s ease-in-out infinite}
+@keyframes floaty{50%{transform:translateY(-8px)}}
+.badges{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.badge-card{background:#fff;border:3px solid var(--gold);border-radius:18px;padding:10px 14px;font-weight:800;font-size:1rem}
+.trophy{font-size:clamp(3rem,10vw,5rem);animation:floaty 2s ease-in-out infinite}
+
+/* ---------- OYUN ---------- */
+#topbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,248,225,.92);border-bottom:4px solid var(--wood);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.icon-btn{width:52px;height:52px;border-radius:50%;border:3px solid var(--wood);background:#fff;font-size:1.5rem;line-height:1}
+.levelchip{padding:8px 16px;border-radius:999px;color:#fff;font-weight:800;font-size:1rem;white-space:nowrap}
+.progress{flex:1;min-width:150px;display:flex;flex-direction:column;gap:4px;font-weight:800}
+#pips{display:flex;gap:5px}
+#pips i{flex:1;height:10px;border-radius:6px;background:#d7ccc8}
+#pips i.done{background:var(--leaf)}
+#pips i.cur{background:var(--gold)}
+#starCount{font-weight:900;font-size:1.3rem;white-space:nowrap}
+.layout{display:grid;grid-template-columns:1fr;gap:14px;padding:12px;max-width:1200px;margin:0 auto}
+@media(min-width:900px){.layout{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start}}
+.bubble{background:#fff;border:4px solid var(--wood);border-radius:22px;padding:12px 18px;margin-bottom:12px;min-height:88px;box-shadow:0 5px 0 rgba(0,0,0,.15)}
+#msg{font-size:clamp(1.15rem,3.2vw,1.55rem);font-weight:800}
+#msg2{font-size:clamp(1rem,2.6vw,1.2rem);margin-top:4px;color:#5d4037}
+#boardWrap{display:flex;justify-content:center}
+#boardFrame{padding:8px;border-radius:22px;background:#6d4c41;box-shadow:0 8px 0 #3e2723,0 14px 26px rgba(0,0,0,.25)}
+#grid{position:relative;display:grid;border-radius:12px;overflow:hidden;background:#8bc34a}
+.cell{width:var(--cell);height:var(--cell);position:relative;display:flex;align-items:center;justify-content:center;font-size:calc(var(--cell)*.55)}
+.cell.g0{background:#c8e8a0}.cell.g1{background:#b9de8a}
+.cell.obs .emo{filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+.cell.o-K{background:repeating-linear-gradient(45deg,#cfd8dc,#cfd8dc 8px,#b0bec5 8px,#b0bec5 16px)}
+.cell.o-W{background:repeating-linear-gradient(0deg,#4fc3f7,#4fc3f7 7px,#29b6f6 7px,#29b6f6 14px)}
+.cell.o-T{background:#6d4c41;box-shadow:inset 0 0 0 4px #4e342e}
+.cell.o-B{background:linear-gradient(90deg,#4fc3f7 0 22%,#a1887f 22% 78%,#4fc3f7 78%);}
+.cell.start{background:#fff3c4}
+.cell.start .lbl{position:absolute;bottom:1px;font-size:calc(var(--cell)*.18);font-weight:900;color:#e65100}
+.cell.start svg,.cell.goal svg{width:80%;height:80%}
+.cell.goal{background:#ffe9a8;box-shadow:inset 0 0 0 3px var(--gold)}
+.cell.pulse{animation:pulse .7s ease-in-out 4}
+@keyframes pulse{50%{transform:scale(1.18);background:#fff176}}
+.cell.focus{outline:5px solid #1e88e5;outline-offset:-5px;z-index:2}
+.cell.bumped{animation:bump .5s;box-shadow:inset 0 0 0 5px #e53935}
+.cell.fault{box-shadow:inset 0 0 0 6px #e53935;z-index:2}
+@keyframes bump{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.mark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:1}
+.mark.dot::after{content:"";width:28%;height:28%;border-radius:50%;background:rgba(30,136,229,.75);border:3px solid #fff}
+.mark.good::after{content:"";width:28%;height:28%;border-radius:50%;background:rgba(46,125,50,.85);border:3px solid #fff}
+.mark .step{min-width:46%;height:46%;border-radius:50%;background:var(--mc,#ef6c00);color:#fff;font-weight:900;font-size:calc(var(--cell)*.26);display:flex;align-items:center;justify-content:center;border:3px solid #fff;padding:0 3px;gap:1px}
+.mark.spark{font-size:calc(var(--cell)*.4);animation:spark 1s ease-out infinite}
+@keyframes spark{0%{transform:scale(.4) translateY(0);opacity:1}100%{transform:scale(1.3) translateY(-18px);opacity:0}}
+.mark.cross{font-size:calc(var(--cell)*.5)}
+.char{position:absolute;left:0;top:0;width:var(--cell);height:var(--cell);z-index:5;pointer-events:none;transition:transform .38s ease-in-out}
+.char.notrans{transition:none}
+.char .sprite{width:100%;height:100%}
+.char .sprite.hop{animation:hop .38s}
+.char .sprite.shake{animation:bump .5s}
+@keyframes hop{50%{transform:translateY(-22%)}}
+.char.friend{--hat:#1e88e5;--hat2:#64b5f6}
+.dirbadge{position:absolute;top:-6%;right:-6%;width:44%;height:44%;border-radius:50%;background:#fff;border:3px solid var(--wood);display:none;align-items:center;justify-content:center;font-size:calc(var(--cell)*.26);font-weight:900}
+.dirbadge.on{display:flex}
+
+/* ---------- PANEL ---------- */
+#panel{display:flex;flex-direction:column;gap:12px}
+.box{background:rgba(255,255,255,.88);border:4px solid var(--wood);border-radius:22px;padding:14px;box-shadow:0 5px 0 rgba(0,0,0,.15)}
+.box h3{margin:0 0 10px;font-size:1.2rem}
+#panel.locked button{pointer-events:none;opacity:.55}
+.dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-areas:". up ." "left down right";gap:10px;max-width:420px;margin:0 auto}
+.dir{min-height:76px;border:none;border-radius:20px;font-weight:900;font-size:1rem;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 6px 0 rgba(0,0,0,.3)}
+.dir span{font-size:2rem;line-height:1}
+.dir:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.dir.up{grid-area:up;background:#e53935}.dir.down{grid-area:down;background:#8e24aa}.dir.left{grid-area:left;background:#fb8c00}.dir.right{grid-area:right;background:#1e88e5}
+#planStrip{display:flex;flex-wrap:wrap;gap:8px;min-height:64px;padding:10px;border-radius:16px;background:#fffde7;border:3px dashed #bcaaa4;align-items:center}
+#planStrip .empty{color:#8d6e63;font-size:1rem}
+.chip{position:relative;min-width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;border:3px solid #fff;box-shadow:0 3px 0 rgba(0,0,0,.25);color:#fff;cursor:pointer}
+.chip i{position:absolute;top:-8px;left:-6px;background:#fff;color:#333;border-radius:50%;width:22px;height:22px;font-size:.75rem;font-style:normal;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid #bbb}
+.chip.U{background:#e53935}.chip.D{background:#8e24aa}.chip.L{background:#fb8c00}.chip.R{background:#1e88e5}
+.chip.prefix{opacity:.45;cursor:default;outline:3px solid #66bb6a}
+.chip.run{transform:scale(1.2);box-shadow:0 0 0 4px #ffeb3b}
+.chip.fail{outline:5px solid #e53935}
+.chip.skip{opacity:.35}
+.chip.shake{animation:bump .5s}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.act{flex:1 1 150px;min-height:58px;border:none;border-radius:18px;font-weight:900;font-size:1.05rem;color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.3);padding:8px 12px}
+.act:active{transform:translateY(3px)}
+.act.go{background:#2e7d32;flex-basis:100%;min-height:68px;font-size:1.3rem}
+.act.del{background:#ef6c00}.act.clr{background:#78909c}.act.hint{background:#f9a825;color:#3e2723}
+.counter{font-weight:800;font-size:1rem;color:#6d4c41;margin-top:6px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.rcard{border:5px solid var(--rc);background:#fff;border-radius:20px;padding:12px;font-weight:900;font-size:1.1rem;color:var(--rc);display:flex;flex-direction:column;gap:4px;align-items:center;min-height:100px}
+.rcard .sy{font-size:2rem;line-height:1}
+.rcard small{color:#4e342e;font-size:1rem}
+.rcard.sel{background:var(--rc);color:#fff}.rcard.sel small{color:#fff}
+.rcard.bad{opacity:.6;border-style:dashed}
+.opts{display:grid;gap:10px}
+.opt{border:4px solid #8d6e3f;background:#fff8e1;border-radius:18px;padding:14px;font-size:1.15rem;font-weight:800;text-align:left;display:flex;gap:12px;align-items:center;min-height:64px;color:var(--ink)}
+.opt b{font-size:1.8rem}
+.opt:active{background:#ffecb3}
+.check .row{display:flex;gap:12px;align-items:center;padding:8px 4px;border-bottom:2px dotted #bcaaa4;font-weight:700}
+.check .row:last-child{border:none}
+.check .ic{font-size:1.8rem}
+.check .res{margin-left:auto;font-weight:900;font-size:1.05rem;white-space:nowrap}
+.check .ok{color:#2e7d32}.check .no{color:#c62828}
+.winbadge{background:linear-gradient(#fff59d,#ffca28);border:4px solid #f57f17;border-radius:20px;padding:12px;text-align:center;font-weight:900;font-size:1.2rem;margin-bottom:12px;animation:floaty 2s infinite}
+@media(max-width:560px){body{font-size:16px}.icon-btn{width:46px;height:46px}}
+</style>
+</head>
+<body>
+
+<!-- ANA MENÜ -->
+<div id="menu" class="screen active">
+  <div class="center">
+    <svg class="scene floaty" viewBox="0 0 320 140" aria-hidden="true">
+      <ellipse cx="160" cy="128" rx="150" ry="10" fill="rgba(0,0,0,.15)"/>
+      <g><rect x="30" y="70" width="12" height="50" fill="#6d4c41"/><circle cx="36" cy="60" r="30" fill="#388e3c"/><circle cx="20" cy="75" r="20" fill="#43a047"/></g>
+      <g><rect x="270" y="75" width="12" height="45" fill="#6d4c41"/><circle cx="276" cy="65" r="26" fill="#388e3c"/></g>
+      <path d="M85 125 Q160 80 235 125Z" fill="#e0c28a"/>
+      <g transform="translate(120,60)"><rect x="0" y="28" width="80" height="40" rx="6" fill="#8d5524" stroke="#4e2c0b" stroke-width="4"/><path d="M0 30 Q0 4 40 4 Q80 4 80 30Z" fill="#a1662f" stroke="#4e2c0b" stroke-width="4"/><rect x="0" y="34" width="80" height="7" fill="#ffb300"/><rect x="34" y="28" width="12" height="18" rx="3" fill="#ffd54f" stroke="#4e2c0b" stroke-width="3"/></g>
+    </svg>
+    <h1 class="title">🧭 KAŞİFİN KAYIP HAZİNESİ</h1>
+    <p class="sub">Kaşife yolunu bulmasında yardım et! Rotanı planla, engelleri aş ve hazineyi keşfet.</p>
+    <button id="btnStart" class="big-btn">OYUNA BAŞLA</button>
+    <button id="btnSoundMenu" class="pill-btn">🔇 Ses: Kapalı</button>
+  </div>
+</div>
+
+<!-- OYUN -->
+<div id="game" class="screen">
+  <header id="topbar">
+    <button id="btnHome" class="icon-btn" aria-label="Ana menü">🏠</button>
+    <div id="levelChip" class="levelchip"></div>
+    <div class="progress"><span id="progText">Görev 1 / 8</span><div id="pips"></div></div>
+    <div id="starCount">⭐ 0</div>
+    <button id="btnSoundGame" class="icon-btn" aria-label="Ses">🔇</button>
+  </header>
+  <div class="layout">
+    <section id="stage">
+      <div class="bubble"><div id="msg"></div><div id="msg2"></div></div>
+      <div id="boardWrap"><div id="boardFrame"><div id="grid"></div></div></div>
+    </section>
+    <section id="panel">
+      <!-- Plan oluşturma -->
+      <div id="planBox" class="box" hidden>
+        <div class="dpad">
+          <button class="dir up" data-d="U"><span>⬆️</span>YUKARI</button>
+          <button class="dir left" data-d="L"><span>⬅️</span>SOL</button>
+          <button class="dir down" data-d="D"><span>⬇️</span>AŞAĞI</button>
+          <button class="dir right" data-d="R"><span>➡️</span>SAĞ</button>
+        </div>
+        <h3 style="margin-top:14px">🗺️ Rotan</h3>
+        <div id="planStrip"></div>
+        <div class="counter" id="planCount"></div>
+        <div class="actions">
+          <button id="btnApply" class="act go">▶ PLANIMI UYGULA</button>
+          <button id="btnUndo" class="act del">⌫ SON ADIMI SİL</button>
+          <button id="btnClear" class="act clr">🗑 PLANI TEMİZLE</button>
+        </div>
+      </div>
+      <!-- Alternatif yol seçimi -->
+      <div id="chooseBox" class="box" hidden>
+        <h3>🛤️ Yollar</h3>
+        <div id="routeCards" class="cards"></div>
+        <div class="actions"><button id="btnGoRoute" class="act go">▶ KAŞİF BU YOLDAN GİTSİN</button></div>
+      </div>
+      <!-- Hata bulma -->
+      <div id="findBox" class="box" hidden>
+        <h3>🕵️ Arkadaşının rotası</h3>
+        <div id="friendStrip" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 4px"></div>
+        <div class="counter">Hatalı adıma haritada veya buradan dokun.</div>
+      </div>
+      <!-- Soru -->
+      <div id="qBox" class="box" hidden>
+        <h3 id="qTitle"></h3>
+        <div id="qOpts" class="opts"></div>
+      </div>
+      <!-- Kontrol -->
+      <div id="checkBox" class="box check" hidden>
+        <h3>🔎 Hazineye ulaştın mı? Rotanı kontrol et!</h3>
+        <div id="checkRows"></div>
+        <div class="actions"><button id="btnReview" class="act clr">🔢 ROTAYI İNCELE</button></div>
+      </div>
+      <!-- Sonraki -->
+      <div id="nextBox" class="box" hidden>
+        <div id="winBadge" class="winbadge" hidden></div>
+        <button id="btnNext" class="big-btn" style="width:100%;font-size:1.5rem;padding:16px">SIRADAKİ GÖREV ▶</button>
+      </div>
+      <button id="hintBtn" class="act hint" style="flex:none">💡 İPUCU</button>
+    </section>
+  </div>
+</div>
+
+<!-- OYUN SONU -->
+<div id="end" class="screen">
+  <div class="center">
+    <div class="trophy">🏆</div>
+    <h1 class="title">🎉 TEBRİKLER, USTA KAŞİF!</h1>
+    <p class="sub">Rotanı planladın, engelleri aştın, çözümünü kontrol ettin ve yeni yollar keşfettin!</p>
+    <div id="endBadges" class="badges"></div>
+    <div style="font-size:1.6rem;font-weight:900" id="endStars"></div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center">
+      <button id="btnAgain" class="big-btn">🔄 TEKRAR OYNA</button>
+      <button id="btnMenu" class="big-btn alt">🏠 ANA MENÜ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+
+/* ================= VERİ ================= */
+const DIRS={
+  U:{dr:-1,dc:0,icon:'⬆️',ar:'↑',name:'Yukarı'},
+  D:{dr:1,dc:0,icon:'⬇️',ar:'↓',name:'Aşağı'},
+  L:{dr:0,dc:-1,icon:'⬅️',ar:'←',name:'Sol'},
+  R:{dr:0,dc:1,icon:'➡️',ar:'→',name:'Sağ'}
+};
+// Harita harfleri: . yol, S başlangıç, G hedef, K kaya, W su, T devrik ağaç, B tamamlanmamış köprü
+const BLK={K:{emoji:'🪨',name:'kaya'},W:{emoji:'🌊',name:'su birikintisi'},T:{emoji:'🌳',name:'devrilmiş ağaç'},B:{emoji:'🌉',name:'tamamlanmamış köprü'}};
+const LEVELS=[
+  {n:1,name:'KOLAY',icon:'🟢',color:'#43a047',badge:'Rota Planlayıcısı',icon2:'🧭'},
+  {n:2,name:'ORTA',icon:'🟡',color:'#f9a825',badge:'Engel Kaşifi',icon2:'🪨'},
+  {n:3,name:'ZOR',icon:'🟠',color:'#fb8c00',badge:'Alternatif Yol Ustası',icon2:'🛤️'},
+  {n:4,name:'USTA KAŞİF',icon:'🔴',color:'#e53935',badge:'Hata Dedektifi',icon2:'🕵️'}
+];
+const RSTYLE=[
+  {sym:'▲',color:'#e65100',name:'TURUNCU YOL'},
+  {sym:'●',color:'#6a1b9a',name:'MOR YOL'},
+  {sym:'■',color:'#00838f',name:'TURKUAZ YOL'},
+  {sym:'◆',color:'#c2185b',name:'PEMBE YOL'}
+];
+const MISSIONS=[
+ {id:1,level:1,type:'plan',slack:3,map:['...G','.K..','....','S...']},
+ {id:2,level:1,type:'plan',slack:3,map:['....G','.KW..','...T.','.....','S....']},
+ {id:3,level:2,type:'plan',slack:4,map:['.....G','.KKW..','......','.T.BK.','......','S.....']},
+ {id:4,level:2,type:'plan',slack:4,map:['..W..G','.KW.K.','......','W.KT..','....W.','S.....']},
+ {id:5,level:3,type:'choose',map:['.....G','.K.WK.','......','.TK.W.','......','S.....'],
+  routes:['RUURRRUUUR','RRRRRUUUUU','RRRRULUURRUU']},
+ {id:6,level:3,type:'choose',map:['..K..G','.W..T.','...K..','K...W.','..T...','S.....'],
+  routes:['RRRRRUUUUU','RRRUUURRUU','RRRUULUURURR','UUUUURRRRR']},
+ {id:7,level:4,type:'find',slack:4,map:['....G','..K..','.....','.K.W.','S....'],friend:'UURRUURR'},
+ {id:8,level:4,type:'find',slack:4,map:['.....G','.B..W.','...T..','W...K.','......','S.....'],friend:'RUUUUURRRR'}
+];
+const H={
+  plan:['Önce hedefin nerede olduğuna bak.','Bir sonraki adımında hangi yöne gitmelisin?','Rotanı başlangıçtan itibaren kontrol et.'],
+  blocked:['Engelin bulunduğu kareden geçemezsin.','Başka bir yol deneyebilir misin?','Planındaki hangi adım seni engele götürüyor?'],
+  choose:['Önce hedefin nerede olduğuna bak.','Yolları dene: Kaşif engelden geçebilir mi?','Başka bir yol deneyebilir misin?'],
+  pick:['Arkadaşının rotasını başlangıçtan adım adım takip et.','Arkadaşının rotasında geçilemeyen bir kare var mı?','Kaşif hangi kareden geçemiyor? Haritadaki engellere bak.'],
+  why:['Kırmızı kareye bak. Orada ne var?']
+};
+
+/* ================= HARİTA & MANTIK ================= */
+function cellAt(m,r,c){ if(r<0||c<0||r>=m.h||c>=m.w) return null; return m.grid[r][c]; }
+function isBlocked(m,r,c){ const t=cellAt(m,r,c); return t===null||'KWTB'.indexOf(t)>=0; }
+function walk(start,moves){ // engelleri yok sayarak ham konumlar
+  const pos=[{r:start.r,c:start.c}]; let p=start;
+  for(const mv of moves){ const d=DIRS[mv]; p={r:p.r+d.dr,c:p.c+d.dc}; pos.push(p); }
+  return pos;
+}
+function simulate(m,start,moves){
+  const positions=[{r:start.r,c:start.c}]; let cur={r:start.r,c:start.c};
+  const res={positions:positions,status:'short',stepsDone:0,failIdx:-1,blockedCell:null,blockType:null};
+  for(let i=0;i<moves.length;i++){
+    const d=DIRS[moves[i]]; const nr=cur.r+d.dr, nc=cur.c+d.dc; const t=cellAt(m,nr,nc);
+    if(t===null){res.status='edge';res.failIdx=i;res.blockedCell={r:nr,c:nc};return res;}
+    if(isBlocked(m,nr,nc)){res.status='blocked';res.failIdx=i;res.blockedCell={r:nr,c:nc};res.blockType=t;return res;}
+    cur={r:nr,c:nc}; positions.push(cur); res.stepsDone=i+1;
+    if(nr===m.goal.r&&nc===m.goal.c){res.status='goal';return res;}
+  }
+  return res;
+}
+function validateRoute(m,moves,start){
+  start=start||m.start;
+  if(start.r!==m.start.r||start.c!==m.start.c) return {ok:false,reason:'start'};
+  for(const ch of moves){ if(!DIRS[ch]) return {ok:false,reason:'command'}; }
+  const sim=simulate(m,start,moves);
+  return {ok:sim.status==='goal',reason:sim.status,sim:sim};
+}
+function shortestPath(m,from){
+  const q=[{r:from.r,c:from.c,p:''}]; const seen={}; seen[from.r+','+from.c]=1;
+  while(q.length){
+    const n=q.shift();
+    if(n.r===m.goal.r&&n.c===m.goal.c) return n.p;
+    for(const k in DIRS){
+      const nr=n.r+DIRS[k].dr, nc=n.c+DIRS[k].dc, key=nr+','+nc;
+      if(!isBlocked(m,nr,nc)&&!seen[key]){seen[key]=1;q.push({r:nr,c:nc,p:n.p+k});}
+    }
+  }
+  return null;
+}
+(function prepare(){
+  MISSIONS.forEach(m=>{
+    m.h=m.map.length; m.w=m.map[0].length; m.grid=m.map.map(row=>row.split(''));
+    m.obstacles=[]; m.walkable=[];
+    for(let r=0;r<m.h;r++)for(let c=0;c<m.w;c++){
+      const t=m.grid[r][c];
+      if(t==='S')m.start={r:r,c:c}; if(t==='G')m.goal={r:r,c:c};
+      if(BLK[t])m.obstacles.push({r:r,c:c,t:t}); else m.walkable.push({r:r,c:c});
+    }
+    m.sample=shortestPath(m,m.start);
+    if(m.type==='choose'){
+      m.routes=m.routes.map((mv,i)=>({id:i,moves:mv,style:RSTYLE[i],valid:validateRoute(m,mv).ok}));
+    }
+    if(m.type==='find'){
+      m.friendPos=walk(m.start,m.friend);
+      m.faultIdx=-1;
+      for(let i=0;i<m.friend.length;i++){const p=m.friendPos[i+1]; if(isBlocked(m,p.r,p.c)){m.faultIdx=i;break;}}
+      m.faultType=cellAt(m,m.friendPos[m.faultIdx+1].r,m.friendPos[m.faultIdx+1].c);
+    }
+  });
+})();
+
+/* ================= DURUM ================= */
+const S={mi:0,m:null,stars:0,phase:'menu',plan:[],prefix:'',runStart:null,runMoves:'',busy:false,token:0,timer:null,
+  hintIdx:0,sound:false,selRoute:null,tried:{},lastRun:null,pos:{r:0,c:0},check:false};
+let CELL=64, cellEls=[], charEl=null, audioCtx=null;
+
+/* ================= SES ================= */
+function say(text){
+  if(!S.sound) return;
+  try{
+    if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined') return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text); u.lang='tr-TR'; u.rate=.9; u.pitch=1.15;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function beep(f,d,type){
+  if(!S.sound) return;
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    audioCtx=audioCtx||new AC();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type=type||'sine'; o.frequency.value=f; g.gain.value=.06;
+    o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+(d||.12));
+  }catch(e){}
+}
+function jingle(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.18,'triangle'),i*140)); }
+function setSound(on){
+  S.sound=on;
+  $('btnSoundMenu').textContent=on?'🔊 Ses: Açık':'🔇 Ses: Kapalı';
+  $('btnSoundGame').textContent=on?'🔊':'🔇';
+  if(!on){try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}}
+}
+
+/* ================= SVG ÇİZİMLERİ ================= */
+const FLAG='<svg viewBox="0 0 64 64"><rect x="14" y="8" width="5" height="48" rx="2" fill="#6d4c41"/><path d="M19 10 L52 22 L19 36Z" fill="#e53935" stroke="#b71c1c" stroke-width="2"/></svg>';
+function chestSVG(open){
+  return open
+  ? '<svg viewBox="0 0 64 64"><circle cx="32" cy="26" r="16" fill="#fff59d" opacity=".8"/><circle cx="24" cy="30" r="5" fill="#ffca28" stroke="#f57f17" stroke-width="2"/><circle cx="36" cy="27" r="5" fill="#ffd54f" stroke="#f57f17" stroke-width="2"/><circle cx="44" cy="32" r="4" fill="#ffca28" stroke="#f57f17" stroke-width="2"/><rect x="8" y="34" width="48" height="22" rx="4" fill="#8d5524" stroke="#4e2c0b" stroke-width="3"/><rect x="8" y="40" width="48" height="5" fill="#ffb300"/><path d="M10 30 L14 10 Q32 4 50 10 L54 30Z" fill="#a1662f" stroke="#4e2c0b" stroke-width="3" transform="translate(0,-4)"/></svg>'
+  : '<svg viewBox="0 0 64 64"><rect x="8" y="30" width="48" height="26" rx="4" fill="#8d5524" stroke="#4e2c0b" stroke-width="3"/><path d="M8 32 Q8 12 32 12 Q56 12 56 32Z" fill="#a1662f" stroke="#4e2c0b" stroke-width="3"/><rect x="8" y="34" width="48" height="5" fill="#ffb300"/><rect x="27" y="30" width="10" height="14" rx="3" fill="#ffd54f" stroke="#4e2c0b" stroke-width="2.5"/></svg>';
+}
+const EXPLORER='<svg viewBox="0 0 64 64" width="100%" height="100%"><ellipse cx="32" cy="59" rx="15" ry="4" fill="rgba(0,0,0,.25)"/><rect x="14" y="40" width="10" height="13" rx="4" fill="#6d4c41"/><rect x="21" y="38" width="22" height="18" rx="7" fill="#ef6c00"/><rect x="24" y="53" width="6" height="7" rx="3" fill="#5d4037"/><rect x="34" y="53" width="6" height="7" rx="3" fill="#5d4037"/><circle cx="32" cy="30" r="12" fill="#ffcc99"/><ellipse cx="32" cy="22" rx="22" ry="5" style="fill:var(--hat,#8d6e3f)"/><path d="M19 22 Q32 3 45 22Z" style="fill:var(--hat2,#a1887f)"/><rect x="19" y="18" width="26" height="4" fill="#5d4037"/><circle cx="27" cy="31" r="2" fill="#333"/><circle cx="37" cy="31" r="2" fill="#333"/><path d="M27 36 Q32 40 37 36" stroke="#a33" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+
+/* ================= EKRANLAR ================= */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+  window.scrollTo(0,0);
+}
+function cancelRun(){ S.token++; if(S.timer){clearTimeout(S.timer);S.timer=null;} S.busy=false; $('panel').classList.remove('locked'); }
+function goMenu(){ cancelRun(); S.phase='menu'; show('menu'); }
+function startGame(){
+  cancelRun(); S.stars=0; show('game');
+  say('Merhaba küçük kaşif! Hazinenin yerini bulmaya hazır mısın? Önce yolunu planlamalısın!');
+  startMission(0);
+}
+
+/* ================= ARAYÜZ YARDIMCILARI ================= */
+function setMsg(a,b){ $('msg').textContent=a||''; $('msg2').textContent=b||''; }
+function setMsg2(b){ $('msg2').textContent=b||''; }
+function renderHeader(){
+  const m=S.m, L=LEVELS[m.level-1];
+  const chip=$('levelChip'); chip.textContent=L.icon+' DÜZEY '+L.n+' – '+L.name; chip.style.background=L.color;
+  $('progText').textContent='Görev '+(S.mi+1)+' / '+MISSIONS.length;
+  $('pips').innerHTML=MISSIONS.map((x,i)=>'<i class="'+(i<S.mi||(i===S.mi&&S.phase==='done')?'done':(i===S.mi?'cur':''))+'"></i>').join('');
+  $('starCount').textContent='⭐ '+S.stars;
+}
+function lock(on){ S.busy=on; $('panel').classList.toggle('locked',on); }
+
+function renderBoard(m){
+  const grid=$('grid'); grid.innerHTML=''; cellEls=[];
+  for(let r=0;r<m.h;r++){
+    cellEls[r]=[];
+    for(let c=0;c<m.w;c++){
+      const t=m.grid[r][c], el=document.createElement('div');
+      el.className='cell '+((r+c)%2?'g1':'g0'); el.dataset.r=r; el.dataset.c=c;
+      if(t==='S'){el.classList.add('start'); el.innerHTML=FLAG+'<span class="lbl">BAŞLA</span>';}
+      else if(t==='G'){el.classList.add('goal'); el.innerHTML=chestSVG(false);}
+      else if(BLK[t]){el.classList.add('obs','o-'+t); el.setAttribute('aria-label',BLK[t].name); el.innerHTML='<span class="emo">'+BLK[t].emoji+'</span>';}
+      grid.appendChild(el); cellEls[r][c]=el;
+    }
+  }
+  charEl=document.createElement('div'); charEl.className='char'; charEl.id='char';
+  charEl.innerHTML='<div class="sprite">'+EXPLORER+'</div><div class="dirbadge"></div>';
+  grid.appendChild(charEl);
+  fitBoard();
+}
+function fitBoard(){
+  const m=S.m; if(!m||!charEl) return;
+  const stage=$('stage'); const aw=Math.max(200,stage.clientWidth-40);
+  const wide=window.innerWidth>=900;
+  const ah=wide?Math.max(300,window.innerHeight-250):Math.max(220,window.innerHeight*.42);
+  CELL=Math.floor(Math.max(34,Math.min(aw/m.w,ah/m.h,96)));
+  const g=$('grid'); g.style.setProperty('--cell',CELL+'px'); g.style.gridTemplateColumns='repeat('+m.w+','+CELL+'px)';
+  setChar(S.pos,false);
+}
+function setChar(p,anim,mv){
+  S.pos={r:p.r,c:p.c};
+  if(!anim){charEl.classList.add('notrans');}
+  charEl.style.transform='translate('+(p.c*CELL)+'px,'+(p.r*CELL)+'px)';
+  if(!anim){void charEl.offsetWidth; charEl.classList.remove('notrans');}
+  else{
+    const sp=charEl.firstChild; sp.classList.remove('hop'); void sp.offsetWidth; sp.classList.add('hop');
+  }
+}
+function showBadge(mv){
+  const b=charEl.querySelector('.dirbadge');
+  if(mv){b.textContent=DIRS[mv].ar; b.classList.add('on');} else b.classList.remove('on');
+}
+function addMark(r,c,cls,html,color){
+  if(!cellEls[r]||!cellEls[r][c]) return;
+  const d=document.createElement('div'); d.className='mark '+cls; if(html!=null)d.innerHTML=html;
+  if(color)d.style.setProperty('--mc',color);
+  cellEls[r][c].appendChild(d);
+}
+function clearMarks(cls){
+  document.querySelectorAll(cls?'.mark.'+cls:'.mark').forEach(n=>n.remove());
+}
+function clearCellStates(){
+  document.querySelectorAll('.cell.focus,.cell.bumped,.cell.fault,.cell.pulse').forEach(n=>n.classList.remove('focus','bumped','fault','pulse'));
+}
+function markPath(positions,moves,color,numbered,cls){
+  for(let i=0;i<moves.length;i++){
+    const p=positions[i+1];
+    addMark(p.r,p.c,cls||'path','<span class="step">'+(numbered?(i+1):'')+DIRS[moves[i]].ar+'</span>',color);
+  }
+}
+function showTrail(sim){
+  clearMarks('dot'); clearMarks('path');
+  for(let i=1;i<sim.positions.length;i++){const p=sim.positions[i]; if(!(p.r===S.m.goal.r&&p.c===S.m.goal.c))addMark(p.r,p.c,'dot','');}
+}
+function openChest(){
+  const g=S.m.goal; cellEls[g.r][g.c].innerHTML=chestSVG(true);
+  addMark(g.r,g.c,'spark','✨'); addMark(g.r,g.c,'spark','⭐');
+  const ms=cellEls[g.r][g.c].querySelectorAll('.spark'); if(ms[1])ms[1].style.animationDelay='.4s';
+}
+function closeChest(){ const g=S.m.goal; cellEls[g.r][g.c].innerHTML=chestSVG(false); }
+
+function renderPanel(){
+  const ph=S.phase;
+  $('planBox').hidden=!(ph==='plan'||ph==='fix');
+  $('chooseBox').hidden=ph!=='choose';
+  $('findBox').hidden=ph!=='pick';
+  $('qBox').hidden=ph!=='why';
+  $('nextBox').hidden=ph!=='done';
+  $('hintBtn').hidden=ph==='done';
+  $('checkBox').hidden=!S.check;
+}
+
+/* ================= GÖREV AKIŞI ================= */
+function startMission(i){
+  cancelRun();
+  S.mi=i; const m=MISSIONS[i]; S.m=m;
+  S.plan=[]; S.prefix=''; S.hintIdx=0; S.selRoute=null; S.tried={}; S.lastRun=null; S.check=false;
+  S.runStart=m.start; S.runMoves='';
+  renderBoard(m); setChar(m.start,false);
+  charEl.classList.remove('friend');
+  const first=(i%2===0)&&m.level>1;
+  const lv=LEVELS[m.level-1];
+  const extra=first?'Yeni düzey: '+lv.name+'!':'';
+  if(m.type==='plan'){
+    S.phase='plan';
+    setMsg('Kaşifi hazineye ulaştırmak için rotanı planla!',extra||'Önce düşün, sonra rotanı uygula!');
+    say('Önce rotanı oluştur. Sonra planını uygula!');
+    renderPlan();
+  }else if(m.type==='choose'){
+    S.phase='choose';
+    setMsg('Hazineye ulaşmak için hangi yolu seçmelisin?',extra||'Bir yol seç, haritada nasıl gittiğini gör.');
+    say('Hazineye ulaşmak için hangi yolu seçmelisin?');
+    renderRoutes();
+  }else{
+    S.phase='pick';
+    charEl.classList.add('friend');
+    setMsg('Arkadaşının rotasında bir hata var. Hatayı bul ve doğru yolu göster!',extra||'Rotayı başlangıçtan adım adım incele.');
+    say('Arkadaşının rotasında bir hata var. Hatayı bul!');
+    markPath(m.friendPos,m.friend,'#1e88e5',true,'friendpath');
+    renderFriendChips();
+  }
+  renderHeader(); renderPanel();
+}
+
+/* ---------- Plan oluşturma ---------- */
+function maxSteps(){
+  const m=S.m; return shortestPath(m,S.runStart).length+m.slack;
+}
+function chipEl(mv,cls,idx){
+  const s=document.createElement('span'); s.className='chip '+mv+' '+(cls||''); s.title=DIRS[mv].name;
+  s.innerHTML=DIRS[mv].icon+(idx!=null?'<i>'+idx+'</i>':'');
+  return s;
+}
+function renderPlan(){
+  const strip=$('planStrip'); strip.innerHTML='';
+  const lr=S.lastRun;
+  for(const mv of S.prefix) strip.appendChild(chipEl(mv,'prefix'));
+  S.plan.forEach((mv,i)=>{
+    let cls='';
+    if(lr&&!lr.ok&&lr.sim.failIdx>=0){ if(i===lr.sim.failIdx)cls='fail'; else if(i>lr.sim.failIdx)cls='skip'; }
+    const ch=chipEl(mv,cls,i+1+S.prefix.length); ch.dataset.i=i; strip.appendChild(ch);
+  });
+  if(!S.plan.length&&!S.prefix){ const e=document.createElement('span'); e.className='empty'; e.textContent='Yön butonlarına basarak rotanı oluştur.'; strip.appendChild(e); }
+  else if(!S.plan.length){ const e=document.createElement('span'); e.className='empty'; e.textContent='← Yeşil çerçeveliler doğru adımlar. Devamını sen ekle!'; strip.appendChild(e); }
+  $('planCount').textContent='Adım: '+S.plan.length+' / '+maxSteps();
+}
+function onPlanEdit(){
+  S.lastRun=null; S.check=false; clearMarks('dot'); clearMarks('path'); clearCellStates(); showBadge(null);
+  setChar(S.runStart,false);
+  setMsg(S.phase==='fix'?'Şimdi doğru yolu göster! Kaşifi hedefe ulaştır.':'Kaşifi hazineye ulaştırmak için rotanı planla!','Önce düşün, sonra rotanı uygula!');
+  renderPlan(); renderPanel();
+}
+function addCmd(mv){
+  if(S.busy||(S.phase!=='plan'&&S.phase!=='fix')) return;
+  if(S.plan.length>=maxSteps()){ setMsg2('Plan dolu! Gereksiz adımları silebilirsin.'); beep(220,.15); return; }
+  S.plan.push(mv); beep(440+S.plan.length*20,.08); onPlanEdit();
+}
+function undoCmd(){
+  if(S.busy) return;
+  if(!S.plan.length){ setMsg2('Silinecek adım yok.'); return; }
+  S.plan.pop(); onPlanEdit();
+}
+function clearPlan(){
+  if(S.busy) return;
+  S.plan=[]; onPlanEdit();
+}
+function applyPlan(){
+  if(S.busy||(S.phase!=='plan'&&S.phase!=='fix')) return;
+  if(!S.plan.length){ setMsg2('Önce rotanı oluştur! Yön butonlarına bas.'); say('Önce rotanı oluştur!'); return; }
+  S.runMoves=S.plan.join('');
+  S.lastRun=null; S.check=false; clearMarks('dot'); clearMarks('path'); clearCellStates(); renderPlan(); renderPanel();
+  const sim=simulate(S.m,S.runStart,S.runMoves);
+  setMsg('Kaşif yola çıktı!','Planındaki adımlar sırayla uygulanıyor…');
+  runAnim(sim,S.runMoves,S.runStart,()=>onPlanResult(sim));
+}
+
+/* ---------- Hareket animasyonu (gerçek konum günceller) ---------- */
+let TICK=560;
+function runAnim(sim,moves,start,done){
+  lock(true);
+  const token=++S.token;
+  setChar(start,false); showBadge(null);
+  let i=0;
+  function chips(){ return $('planStrip').querySelectorAll('.chip[data-i]'); }
+  function step(){
+    if(token!==S.token) return;
+    if(i>=sim.stepsDone){ finish(); return; }
+    const mv=moves[i], p=sim.positions[i+1];
+    showBadge(mv); setChar(p,true,mv); beep(500+i*30,.1);
+    const cs=chips(); cs.forEach(c=>c.classList.remove('run')); if(cs[i])cs[i].classList.add('run');
+    i++; S.timer=setTimeout(step,TICK);
+  }
+  function finish(){
+    if(token!==S.token) return;
+    chips().forEach(c=>c.classList.remove('run'));
+    if(sim.status==='blocked'||sim.status==='edge'){
+      const d=DIRS[moves[sim.failIdx]], p=S.pos;
+      charEl.style.transform='translate('+(p.c*CELL+d.dc*CELL*.3)+'px,'+(p.r*CELL+d.dr*CELL*.3)+'px)';
+      const sp=charEl.firstChild; sp.classList.remove('shake'); void sp.offsetWidth; sp.classList.add('shake');
+      const bc=sim.blockedCell; if(cellEls[bc.r]&&cellEls[bc.r][bc.c]) cellEls[bc.r][bc.c].classList.add('bumped');
+      beep(160,.3,'sawtooth');
+      S.timer=setTimeout(()=>{ if(token!==S.token)return; setChar(S.pos,true); showBadge(null); S.timer=setTimeout(()=>{if(token===S.token){lock(false);done();}},TICK*.6); },TICK*.7);
+    }else{
+      S.timer=setTimeout(()=>{ if(token!==S.token)return; showBadge(null); lock(false); done(); },TICK*.5);
+    }
+  }
+  S.timer=setTimeout(step,TICK*.6);
+}
+
+/* ---------- Kontrol paneli ---------- */
+function showCheck(sim,ok){
+  const avoided=!(sim.status==='blocked'||sim.status==='edge');
+  const rows=[
+    ['🚩','Rotan başlangıç noktasından mı başladı?',true],
+    ['🪨','Engellerden kaçındın mı?',avoided],
+    ['🏆','Hedefe ulaştın mı?',ok]
+  ];
+  $('checkRows').innerHTML=rows.map(r=>'<div class="row"><span class="ic">'+r[0]+'</span><span>'+r[1]+'</span><span class="res '+(r[2]?'ok':'no')+'">'+(r[2]?'✅ Evet':'❌ Hayır')+'</span></div>').join('');
+  S.check=true; renderPanel();
+}
+function reviewRoute(){
+  if(S.busy||!S.lastRun) return;
+  const sim=S.lastRun.sim; const moves=S.runMoves.slice(0,sim.stepsDone);
+  clearMarks('dot'); clearMarks('path');
+  markPath(sim.positions,moves,'#1e88e5',true,'path');
+  const s=S.m.start; cellEls[s.r][s.c].classList.add('pulse');
+  setMsg2('Numaralara bak: Kaşif başlangıçtan nereye gitti?');
+}
+
+/* ---------- Plan sonucu (Aşama 1-3) ---------- */
+function onPlanResult(sim){
+  const m=S.m;
+  const full=validateRoute(m,S.prefix+S.runMoves);
+  const ok=full.ok;
+  S.lastRun={sim:sim,ok:ok};
+  renderPlan(); showTrail(sim); showCheck(sim,ok);
+  if(ok){
+    openChest(); jingle();
+    setMsg('Harika! Planını uyguladın ve hedefe ulaştın!','Hazine sandığı açıldı!');
+    say('Harika! Kaşif hedefine ulaştı!');
+    completeMission();
+  }else if(sim.status==='blocked'||sim.status==='edge'){
+    setMsg('Yolunda bir engel var. Ne yapabilirsin?','Bu yoldan geçemiyoruz. Yeni bir rota deneyelim!');
+    say('Burada bir engel var. Başka bir yol deneyelim!');
+    S.hintIdx=0;
+  }else{
+    setMsg('Kaşif planını bitirdi ama hazineye ulaşamadı.','Hazineye ulaştın mı? Rotanı kontrol et!');
+    say('Rotanı kontrol et!');
+  }
+}
+
+/* ---------- Alternatif yol (Aşama 4) ---------- */
+function renderRoutes(){
+  const box=$('routeCards'); box.innerHTML='';
+  S.m.routes.forEach(r=>{
+    const b=document.createElement('button'); b.className='rcard'+(S.selRoute===r.id?' sel':'')+(S.tried[r.id]==='bad'?' bad':'');
+    b.style.setProperty('--rc',r.style.color);
+    b.innerHTML='<span class="sy">'+r.style.sym+'</span><span>'+r.style.name+'</span><small>👣 '+r.moves.length+' adım'+(S.tried[r.id]==='bad'?' · 🚧 geçilemedi':'')+'</small>';
+    b.addEventListener('click',()=>selectRoute(r.id));
+    box.appendChild(b);
+  });
+}
+function selectRoute(id){
+  if(S.busy||S.phase!=='choose') return;
+  S.selRoute=id; const r=S.m.routes[id];
+  clearMarks(); clearCellStates(); setChar(S.m.start,false); showBadge(null); S.check=false;
+  markPath(walk(S.m.start,r.moves),r.moves,r.style.color,false,'path');
+  setMsg('Hazineye ulaşmak için hangi yolu seçmelisin?',r.style.name+' haritada gösterildi. Kaşif bu yoldan gitsin mi?');
+  renderRoutes(); renderPanel(); beep(520,.1);
+}
+function goRoute(){
+  if(S.busy||S.phase!=='choose') return;
+  if(S.selRoute==null){ setMsg2('Önce bir yol seç!'); return; }
+  const r=S.m.routes[S.selRoute];
+  S.runStart=S.m.start; S.runMoves=r.moves; S.check=false; renderPanel();
+  clearCellStates(); const sim=simulate(S.m,S.runStart,r.moves);
+  setMsg('Kaşif seçtiğin yoldan gidiyor!','');
+  runAnim(sim,r.moves,S.runStart,()=>onChooseResult(r,sim));
+}
+function onChooseResult(r,sim){
+  const v=validateRoute(S.m,r.moves);
+  S.lastRun={sim:sim,ok:v.ok}; showCheck(sim,v.ok);
+  if(v.ok){
+    S.tried[r.id]='ok'; openChest(); jingle(); renderRoutes();
+    setMsg('Harika! Kaşif hedefine ulaştı!','Bu yolu neden seçtin?');
+    say('Bu yolu neden seçtin?');
+    S.phase='why'; S.hintIdx=0;
+    renderQuestion('Bu yolu neden seçtin?',[
+      {k:'short',i:'👣',t:'Daha az adım var.'},
+      {k:'safe',i:'🌿',t:'Engellerden uzak.'},
+      {k:'goal',i:'🏆',t:'Hedefe ulaşıyor.'}
+    ],k=>{
+      const valid=S.m.routes.filter(x=>x.valid), minLen=Math.min.apply(null,valid.map(x=>x.moves.length));
+      let t;
+      if(k==='short') t=(r.moves.length===minLen)?'Doğru! Bu yolda daha az adım var.':'Güzel düşündün! Başka bir yolda daha az adım olabilir ama bu yol da hedefe ulaşıyor.';
+      else if(k==='safe') t='Engellerden uzak durmak akıllıca bir stratejidir!';
+      else t='Evet! Hedefe ulaşan her yol doğru bir çözümdür.';
+      setMsg('Harika düşündün!',t);
+      completeMission();
+    });
+    renderPanel();
+  }else{
+    S.tried[r.id]='bad'; renderRoutes();
+    setMsg('Yolunda bir engel var. Ne yapabilirsin?','Bu yoldan geçemiyoruz. Başka bir yol deneyelim!');
+    say('Bu yoldan geçemiyoruz. Başka bir yol deneyelim!');
+    S.hintIdx=0;
+  }
+}
+
+/* ---------- Hata bulma (Aşama 5) ---------- */
+function renderFriendChips(){
+  const box=$('friendStrip'); box.innerHTML='';
+  S.m.friend.split('').forEach((mv,i)=>{
+    const ch=chipEl(mv,'',i+1); ch.addEventListener('click',()=>pickStep(i)); box.appendChild(ch);
+  });
+}
+function onCell(r,c){
+  if(S.busy||S.phase!=='pick') return;
+  const fp=S.m.friendPos; let idx=-1;
+  for(let i=1;i<fp.length;i++){ if(fp[i].r===r&&fp[i].c===c){idx=i-1;break;} }
+  if(idx<0){ setMsg2('Numaralı karelerden birine dokun.'); return; }
+  pickStep(idx);
+}
+function pickStep(i){
+  if(S.busy||S.phase!=='pick') return;
+  const m=S.m;
+  if(i===m.faultIdx){
+    const p=m.friendPos[i+1];
+    cellEls[p.r][p.c].classList.add('fault'); addMark(p.r,p.c,'cross','❌');
+    jingle();
+    setMsg('Harika gözlem! Rotadaki sorunu fark ettin.','Şimdi sebebini bulalım.');
+    say('Çok iyi inceledin! Rotadaki hatayı fark ettin.');
+    S.phase='why'; S.hintIdx=0;
+    renderQuestion('Bu kare neden sorun çıkardı?',[
+      {k:'obs',i:BLK[m.faultType].emoji,t:'Kaşif engelin olduğu kareden geçmeye çalıştı.'},
+      {k:'edge',i:'🗺️',t:'Kaşif haritanın dışına çıktı.'},
+      {k:'few',i:'👣',t:'Kaşif çok az adım attı.'}
+    ],k=>{
+      if(k==='obs'){ beginFix(); return true; }
+      setMsg('Tekrar düşünelim.','Kaşif o karede ne görüyor? Kırmızı kareye bak.'); beep(220,.2); return false;
+    });
+    renderPanel();
+  }else{
+    setMsg('Rotayı tekrar incele.','Kaşif hangi kareden geçemiyor?'); beep(220,.2);
+    const ch=$('friendStrip').children[i]; if(ch){ch.classList.remove('shake');void ch.offsetWidth;ch.classList.add('shake');}
+  }
+}
+function beginFix(){
+  const m=S.m;
+  S.phase='fix'; S.prefix=m.friend.slice(0,m.faultIdx); S.plan=[]; S.lastRun=null; S.hintIdx=0; S.check=false;
+  S.runStart=m.friendPos[m.faultIdx];
+  clearMarks('friendpath');
+  m.friendPos.slice(1,m.faultIdx+1).forEach(p=>addMark(p.r,p.c,'good',''));
+  charEl.classList.remove('friend'); setChar(S.runStart,false);
+  setMsg('Doğru! Engelli kareden geçilemez.','Şimdi doğru yolu göster! Kaşifi hedefe ulaştır.');
+  say('Şimdi doğru yolu göster!');
+  renderPlan(); renderPanel();
+}
+
+/* ---------- Soru kutusu ---------- */
+function renderQuestion(title,opts,onPick){
+  $('qTitle').textContent=title; const box=$('qOpts'); box.innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('button'); b.className='opt'; b.innerHTML='<b>'+o.i+'</b><span>'+o.t+'</span>';
+    b.addEventListener('click',()=>{ if(S.busy) return; const r=onPick(o.k); if(r!==false){ $('qBox').hidden=true; } });
+    box.appendChild(b);
+  });
+}
+
+/* ---------- Görev tamamlama ---------- */
+function completeMission(){
+  S.stars++; S.phase='done'; S.hintIdx=0;
+  renderHeader();
+  const last=S.mi===MISSIONS.length-1;
+  $('btnNext').textContent=last?'SONUCU GÖR 🏆':'SIRADAKİ GÖREV ▶';
+  const wb=$('winBadge');
+  if(S.mi%2===1){ const L=LEVELS[S.m.level-1]; wb.hidden=false; wb.textContent='🎖️ '+L.icon2+' '+L.badge+' rozetini kazandın!'; }
+  else { wb.hidden=false; wb.textContent='⭐ Yeni bir yıldız kazandın!'; }
+  renderPanel();
+  setTimeout(()=>{ try{ $('nextBox').scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){} },300);
+}
+function nextMission(){
+  if(S.phase!=='done') return;
+  if(S.mi<MISSIONS.length-1) startMission(S.mi+1); else showEnd();
+}
+function showEnd(){
+  cancelRun(); S.phase='end';
+  $('endBadges').innerHTML=LEVELS.map(L=>'<div class="badge-card">'+L.icon2+' '+L.badge+'</div>').join('')+'<div class="badge-card" style="background:#fff59d">🏆 USTA KAŞİF</div>';
+  $('endStars').textContent='⭐ '+S.stars+' / '+MISSIONS.length;
+  show('end'); jingle(); say('Tebrikler! Sen gerçek bir hazine kaşifisin!');
+}
+
+/* ---------- İpucu ---------- */
+function hint(){
+  if(S.busy||S.phase==='done'||S.phase==='menu') return;
+  let list;
+  if(S.phase==='pick') list=H.pick;
+  else if(S.phase==='why') list=H.why;
+  else if(S.phase==='choose') list=H.choose;
+  else list=(S.lastRun&&!S.lastRun.ok&&S.lastRun.sim.failIdx>=0)?H.blocked:H.plan;
+  const t=list[S.hintIdx%list.length];
+  if(S.hintIdx%list.length===0&&(S.phase==='plan'||S.phase==='fix'||S.phase==='choose')){
+    const g=S.m.goal; cellEls[g.r][g.c].classList.remove('pulse'); void cellEls[g.r][g.c].offsetWidth; cellEls[g.r][g.c].classList.add('pulse');
+  }
+  S.hintIdx++; setMsg2('💡 '+t); say(t);
+}
+
+/* ================= OLAYLAR ================= */
+$('btnStart').addEventListener('click',startGame);
+$('btnSoundMenu').addEventListener('click',()=>setSound(!S.sound));
+$('btnSoundGame').addEventListener('click',()=>setSound(!S.sound));
+$('btnHome').addEventListener('click',goMenu);
+$('btnMenu').addEventListener('click',goMenu);
+$('btnAgain').addEventListener('click',startGame);
+$('btnApply').addEventListener('click',applyPlan);
+$('btnUndo').addEventListener('click',undoCmd);
+$('btnClear').addEventListener('click',clearPlan);
+$('btnGoRoute').addEventListener('click',goRoute);
+$('btnReview').addEventListener('click',reviewRoute);
+$('btnNext').addEventListener('click',nextMission);
+$('hintBtn').addEventListener('click',hint);
+document.querySelectorAll('.dir').forEach(b=>b.addEventListener('click',()=>addCmd(b.dataset.d)));
+$('grid').addEventListener('click',e=>{ const c=e.target.closest('.cell'); if(c) onCell(+c.dataset.r,+c.dataset.c); });
+$('planStrip').addEventListener('click',e=>{
+  const ch=e.target.closest('.chip'); if(!ch||ch.dataset.i==null||S.busy||!S.lastRun) return;
+  const p=S.lastRun.sim.positions[+ch.dataset.i+1]; if(!p) return;
+  clearCellStates(); cellEls[p.r][p.c].classList.add('focus');
+});
+window.addEventListener('resize',fitBoard);
+
+/* test/hata ayıklama için */
+window.__game={S:S,MISSIONS:MISSIONS,simulate:simulate,validateRoute:validateRoute,shortestPath:shortestPath,setTick:v=>{TICK=v;},isBlocked:isBlocked};
+})();
+</script>
+</body>
+</html>
