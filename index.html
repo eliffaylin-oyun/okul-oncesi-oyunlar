@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Robotun Alternatif Rotası: 60-72 aylık çocuklar için planlama, rota oluşturma ve hata düzeltme becerilerini destekleyen eğitsel web oyunu.">
+<title>Robotun Alternatif Rotası</title>
+<style>
+:root{
+  --ink:#17324d;--blue:#2f80ed;--green:#2e9e5b;--orange:#f2994a;--purple:#9b51e0;--red:#e5484d;
+  --card:#fff;--shadow:0 6px 0 rgba(23,50,77,.10),0 12px 26px rgba(23,50,77,.12);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:"Trebuchet MS","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;color:var(--ink);
+  background:
+    radial-gradient(circle at 12% 8%,#d4eaff 0,transparent 45%),
+    radial-gradient(circle at 92% 92%,#ffe9b5 0,transparent 42%),
+    linear-gradient(180deg,#e8f4ff,#fff7e0);
+  background-attachment:fixed;
+}
+button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
+button:disabled{opacity:.45;cursor:not-allowed}
+.screen{display:none}
+.screen.active{display:block}
+#screen-menu.active,#screen-intro.active,#screen-end.active{display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+
+/* ---------- Ortak ---------- */
+.hero{max-width:680px;width:100%;background:var(--card);border-radius:34px;box-shadow:var(--shadow);padding:30px 24px;text-align:center}
+.hero h1{margin:8px 0 10px;font-size:clamp(1.7rem,6vw,2.7rem);line-height:1.1;letter-spacing:.5px}
+.hero p{font-size:clamp(1.05rem,3.4vw,1.3rem);line-height:1.45;margin:10px 0 22px}
+.hero .robot-big{width:150px;height:150px;margin:0 auto;animation:float 2.6s ease-in-out infinite}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 20px;border-radius:18px;font-weight:800;font-size:1rem;background:#eaf1fb;box-shadow:0 4px 0 #c3d2e6}
+.btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 #c3d2e6}
+.btn.primary{background:var(--green);color:#fff;box-shadow:0 5px 0 #1f7a43}
+.btn.primary:active:not(:disabled){box-shadow:0 1px 0 #1f7a43}
+.btn.big{font-size:clamp(1.2rem,4.5vw,1.6rem);padding:18px 34px;border-radius:24px}
+.btn.warn{background:#ffd23f;box-shadow:0 4px 0 #c99f00}
+.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* ---------- Üst çubuk ---------- */
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 14px;max-width:1200px;margin:0 auto}
+.topbar .grow{flex:1 1 180px;min-width:150px}
+.icon-btn{width:46px;height:46px;border-radius:14px;background:#fff;box-shadow:0 3px 0 #c3d2e6;font-size:1.3rem}
+.hint-btn{height:46px;padding:0 16px;border-radius:14px;background:#ffd23f;box-shadow:0 3px 0 #c99f00;font-weight:800}
+#mission-label{font-weight:900;font-size:1.15rem}
+.dots{display:flex;gap:6px;margin-top:4px}
+.dots i{width:14px;height:14px;border-radius:50%;background:#cfd9e6;display:block}
+.dots i.done{background:#f5b301}
+.dots i.cur{outline:3px solid var(--blue);outline-offset:1px;background:#fff}
+.pill{background:#fff;border-radius:999px;padding:8px 14px;font-weight:800;box-shadow:0 3px 0 #c3d2e6;font-size:.92rem}
+.energy{display:flex;align-items:center;gap:6px;font-weight:800}
+.energy .bar{width:84px;height:14px;border-radius:99px;background:#d6e0ec;overflow:hidden}
+.energy .bar i{display:block;height:100%;width:10%;background:linear-gradient(90deg,#43c76b,#a6e22e);transition:width .6s}
+
+/* ---------- Oyun yerleşimi ---------- */
+.game{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;padding:6px 14px 30px;max-width:1200px;margin:0 auto;align-items:start}
+@media(max-width:900px){.game{grid-template-columns:1fr}}
+.board-wrap{position:relative;width:min(100%,74vh,640px);margin:0 auto}
+@media(max-width:900px){.board-wrap{width:min(100%,520px)}}
+#board{background:#1f3a5f;border-radius:22px;padding:8px;box-shadow:var(--shadow);position:relative;--rb:#58b4ff}
+#board.friend{--rb:#ff9f5a}
+#board.wallhit{animation:wall .6s}
+@keyframes wall{0%,100%{box-shadow:var(--shadow)}30%{box-shadow:0 0 0 7px #e5484d}}
+.inner{position:relative;width:100%}
+.grid{position:absolute;inset:0;display:grid}
+.cell{padding:2px;position:relative}
+.tile{position:relative;width:100%;height:100%;border-radius:12px;border:3px solid;display:flex;align-items:center;justify-content:center}
+.tile svg{width:82%;height:82%}
+.tile.path{background:#c9f1cf;border-color:#93d49e}
+.tile.start{background:#bfe0ff;border-color:#74b3ee}
+.tile.goal{background:#ffe680;border-color:#f0bd00}
+.tile.rock{background:#ffb3b3;border-color:#e5484d}
+.tile.rock.mv{border-style:dashed}
+.cell.leaving .tile{animation:leave .7s forwards}
+@keyframes leave{to{opacity:.1;transform:scale(.6)}}
+.cell.pop .tile{animation:pop .7s}
+@keyframes pop{0%{transform:scale(.3)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+.cell.hit .tile{animation:shake .5s 2}
+.cell.last .tile{outline:4px solid #7b2ff7;outline-offset:-2px}
+.cell.last .tile::after{content:"📍";position:absolute;top:-6px;right:-2px;font-size:clamp(14px,3.4vw,24px)}
+.cell.hl .tile{animation:pulse 1s 3}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,193,7,.95)}50%{box-shadow:0 0 0 12px rgba(255,193,7,0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+.robot{position:absolute;z-index:3;transition:left .5s ease,top .5s ease}
+.robot.notrans,.robot-rot.notrans{transition:none!important}
+.robot-rot{width:100%;height:100%;padding:7%;transition:transform .4s ease;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+.robot-rot svg{width:100%;height:100%;display:block}
+.robot.bump{animation:shake .45s}
+.robot.hl .robot-rot{animation:pulse 1s 3;border-radius:50%}
+.board-banner{margin:10px auto 0;text-align:center;font-weight:800;border-radius:16px;padding:8px 12px}
+.board-banner.on{background:#fff0c2;border:3px solid #f5b301}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;margin-top:10px;font-size:.85rem;font-weight:700}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend b{width:16px;height:16px;border-radius:5px;border:2px solid;display:inline-block}
+.star{position:absolute;left:50%;top:50%;font-size:32px;z-index:6;pointer-events:none;animation:fly 1.2s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) scale(1.3);opacity:0}}
+
+/* ---------- Panel ---------- */
+.panel{background:var(--card);border-radius:26px;box-shadow:var(--shadow);padding:16px}
+.robo-row{display:flex;gap:10px;align-items:flex-start}
+.robo-row .avatar{width:70px;height:70px;flex:none;--rb:#58b4ff}
+.bubble{position:relative;background:#eef6ff;border:3px solid #b9d7f5;border-radius:18px;padding:10px 14px;font-weight:700;font-size:1.05rem;line-height:1.35;flex:1}
+.bubble::before{content:"";position:absolute;left:-12px;top:20px;border:9px solid transparent;border-right-color:#b9d7f5;border-left:0}
+.instruction{margin:12px 0 4px}
+.mtitle{font-size:.85rem;font-weight:800;color:#5b7897;text-transform:uppercase;letter-spacing:.5px}
+.itext{font-size:1.2rem;font-weight:900;margin-top:2px}
+.crit{margin-top:8px;background:#fff6d6;border:3px solid #f5b301;border-radius:14px;padding:8px 12px;font-weight:800}
+.facing{margin:8px 0;font-size:.95rem;background:#f3f7fb;border-radius:12px;padding:6px 10px}
+.fb{margin-top:10px;border-radius:14px;padding:10px 12px;font-weight:800}
+.fb.good{background:#dff7e6;border:3px solid #43c76b}
+.fb.warn{background:#ffe9d1;border:3px solid #f2994a}
+.fb.info{background:#e3f0ff;border:3px solid #7ab6f0}
+.fb:empty{display:none}
+
+.cmds{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+.cmd{display:flex;align-items:center;justify-content:center;gap:8px;min-height:62px;border-radius:18px;font-weight:900;font-size:1.05rem;background:var(--cb);border:3px solid var(--cc);box-shadow:0 4px 0 var(--cc)}
+.cmd:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--cc)}
+.cmd .ci{font-size:1.6rem}
+.c-F{--cc:#2e9e5b;--cb:#dff7e6}
+.c-B{--cc:#e08a2c;--cb:#ffecd2}
+.c-L{--cc:#8e44d6;--cb:#efe1fb}
+.c-R{--cc:#2f80ed;--cb:#dceaff}
+.plan-box{background:#f7fafd;border:3px dashed #b9c9dc;border-radius:18px;padding:10px;margin-top:6px}
+.plan-title{font-weight:900;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.plan-title small{font-weight:700;color:#5b7897}
+.cards{display:flex;flex-wrap:wrap;gap:8px;min-height:52px;align-items:center}
+.empty{color:#7a8da3;font-weight:700}
+.card{display:inline-flex;align-items:center;gap:5px;padding:5px 10px 5px 6px;border-radius:12px;background:var(--cb);border:3px solid var(--cc);font-weight:800;font-size:.95rem;transition:transform .15s}
+.card .num{width:20px;height:20px;border-radius:50%;background:var(--cc);color:#fff;font-size:.72rem;display:inline-flex;align-items:center;justify-content:center}
+.card .ci{font-size:1.2rem}
+.card.run{outline:4px solid #ffd23f;transform:scale(1.1)}
+.card.bad{background:#ffd9d9;border-color:#e5484d;box-shadow:0 0 0 3px #fff,0 0 0 6px #e5484d}
+.card.bad::after{content:"🛑"}
+.card.skip{opacity:.4}
+button.card{cursor:pointer}
+button.card:hover{transform:scale(1.05)}
+button.card.sel{outline:4px solid #7b2ff7}
+.plan-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.plan-actions .btn{flex:1 1 140px}
+.failbox,.success,.alts,.reasonbox,.checks-box{margin-top:12px;border-radius:18px;padding:12px}
+.failbox{background:#eef6ff;border:3px solid #7ab6f0}
+.failbox .say{font-weight:800;font-size:1.05rem}
+.success{background:#e6f9d4;border:3px solid #7bd03a;text-align:center}
+.success .big{font-size:2.4rem}
+.success .msg{font-weight:900;font-size:1.15rem;margin:4px 0 8px}
+.alts{background:#fff6d6;border:3px solid #f5b301}
+.alt-title{font-weight:900;margin-bottom:6px}
+.reasonbox{background:#f1e8ff;border:3px solid #a97bf0}
+.reasonbox .btn{width:100%;margin-top:8px;justify-content:flex-start}
+.checks-box{background:#f7fafd;border:3px solid #c3d2e6}
+.checks-box ul{margin:0;padding:0;list-style:none;font-weight:800;line-height:1.7}
+
+/* Rota kartları */
+.routes{display:grid;gap:10px;margin-top:10px}
+.route-card{text-align:left;background:#fff;border:4px solid var(--rc);border-radius:18px;padding:8px 10px;box-shadow:0 4px 0 var(--rc)}
+.route-card.sel{background:#fffbe0;outline:4px solid #7b2ff7}
+.rhead{display:flex;align-items:center;gap:8px;font-size:1.05rem}
+.rbadge{width:30px;height:30px;border-radius:50%;background:var(--rc);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:900}
+.mini{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
+.mc{width:26px;height:26px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:.9rem;background:var(--cb);border:2px solid var(--cc)}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(15,35,60,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.modal.hidden{display:none}
+.modal .box{background:#fff;border-radius:30px;padding:26px 22px;max-width:460px;width:100%;text-align:center;box-shadow:var(--shadow);animation:pop .5s}
+.modal .emoji{font-size:4.2rem}
+.modal h2{margin:6px 0}
+.modal p{font-size:1.1rem;margin:6px 0 16px}
+.badges{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:14px 0}
+.badge{background:#fff6d6;border:3px solid #f5b301;border-radius:16px;padding:8px 12px;font-weight:800}
+.award{font-size:clamp(1.3rem,5vw,2rem);font-weight:900;background:linear-gradient(90deg,#f5b301,#ff7a00);-webkit-background-clip:text;background-clip:text;color:transparent;margin:8px 0}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ANA MENÜ -->
+<section id="screen-menu" class="screen active">
+  <div class="hero">
+    <div class="robot-big" id="menu-robot"></div>
+    <h1>🤖 ROBOTUN ALTERNATİF ROTASI</h1>
+    <p>Robotun enerji istasyonuna ulaşmasına yardım et! Rotanı planla, engelleri aş ve yeni yollar keşfet.</p>
+    <button class="btn primary big" id="btn-start">▶ OYUNA BAŞLA</button>
+    <div class="row"><button class="btn" id="btn-sound-menu" aria-label="Sesi aç veya kapat">🔊 Ses: Açık</button></div>
+  </div>
+</section>
+
+<!-- GİRİŞ -->
+<section id="screen-intro" class="screen">
+  <div class="hero">
+    <div class="robot-big" id="intro-robot"></div>
+    <div class="bubble" style="margin:18px 0;text-align:left;font-size:1.25rem">“Merhaba! Ben Robo. Enerjim azalıyor. Enerji istasyonuna ulaşmak için bana bir yol planlayabilir misin?”</div>
+    <button class="btn primary big" id="btn-go">HAYDİ BAŞLAYALIM! ⚡</button>
+  </div>
+</section>
+
+<!-- OYUN -->
+<section id="screen-game" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" id="btn-menu" aria-label="Ana menü">🏠</button>
+    <div class="grow">
+      <div id="mission-label">Görev 1 / 8</div>
+      <div class="dots" id="dots"></div>
+    </div>
+    <div class="pill" id="level-pill">Düzey 1</div>
+    <div class="pill" id="stars">⭐ 0</div>
+    <div class="energy" title="Robot enerjisi"><span>🔋</span><div class="bar"><i id="energy-fill"></i></div></div>
+    <button class="hint-btn" id="btn-hint">💡 İPUCU</button>
+    <button class="icon-btn" id="btn-sound" aria-label="Sesi aç veya kapat">🔊</button>
+  </header>
+  <main class="game">
+    <div>
+      <div class="board-wrap">
+        <div id="board"></div>
+      </div>
+      <div class="board-banner" id="board-banner"></div>
+      <div class="legend">
+        <span><b style="background:#bfe0ff;border-color:#74b3ee"></b>Başlangıç</span>
+        <span><b style="background:#c9f1cf;border-color:#93d49e"></b>Yol</span>
+        <span><b style="background:#ffb3b3;border-color:#e5484d"></b>Engel ✕</span>
+        <span><b style="background:#ffb3b3;border-color:#e5484d;border-style:dashed"></b>Yer değiştirebilen engel ⇄</span>
+        <span><b style="background:#ffe680;border-color:#f0bd00"></b>Enerji istasyonu ⚡</span>
+      </div>
+    </div>
+    <aside class="panel">
+      <div class="robo-row">
+        <div class="avatar" id="avatar"></div>
+        <div class="bubble" id="robo-bubble"></div>
+      </div>
+      <div class="instruction" id="instruction"></div>
+      <div class="facing" id="facing"></div>
+      <div id="area"></div>
+      <div class="fb" id="feedback"></div>
+    </aside>
+  </main>
+</section>
+
+<!-- OYUN SONU -->
+<section id="screen-end" class="screen">
+  <div class="hero">
+    <div class="robot-big" id="end-robot"></div>
+    <h1>🎉 TEBRİKLER, ROBOT PLANLAYICISI!</h1>
+    <p>“Rotanı oluşturdun, engelleri fark ettin, planını değiştirdin ve robot arkadaşının hatasını düzelttin!”</p>
+    <div class="award">🏆 USTA ROBOT PLANLAYICISI</div>
+    <div class="badges" id="end-badges"></div>
+    <div id="end-stars" style="font-weight:900;font-size:1.3rem"></div>
+    <div class="row">
+      <button class="btn primary big" id="btn-again">🔁 TEKRAR OYNA</button>
+      <button class="btn big" id="btn-home">🏠 ANA MENÜ</button>
+    </div>
+  </div>
+</section>
+
+<div class="modal hidden" id="modal"><div class="box" id="modal-box"></div></div>
+
+<script>
+(function(){
+'use strict';
+
+/* =====================================================================
+   YARDIMCILAR
+===================================================================== */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.prototype.slice.call(r.querySelectorAll(s));
+const S_SPEED={v:1}; // testlerde hızlandırmak için
+const sleep=ms=>new Promise(r=>setTimeout(r,ms*S_SPEED.v));
+
+const DX=[0,1,0,-1], DY=[-1,0,1,0];                 // 0=Kuzey 1=Doğu 2=Güney 3=Batı
+const DIRN=['Yukarı (Kuzey)','Sağ (Doğu)','Aşağı (Güney)','Sol (Batı)'];
+const DIRA=['⬆️','➡️','⬇️','⬅️'];
+const CMD={
+  F:{i:'⬆️',l:'İLERİ',s:'İleri'},
+  B:{i:'⬇️',l:'GERİ',s:'Geri'},
+  L:{i:'↩️',l:'SOLA DÖN',s:'Sola dön'},
+  R:{i:'↪️',l:'SAĞA DÖN',s:'Sağa dön'}
+};
+const ROUTE_STYLE=[
+  {c:'#8e24aa',dash:'',off:-0.12,sw:'none'},
+  {c:'#ef6c00',dash:'0.3 0.16',off:0,sw:'10 6'},
+  {c:'#00897b',dash:'0.02 0.17',off:0.12,sw:'2 7'}
+];
+
+/* =====================================================================
+   SVG GÖRSELLERİ
+===================================================================== */
+const ROBOT_SVG=`<svg viewBox="0 0 100 100" aria-hidden="true">
+<rect x="10" y="32" width="14" height="42" rx="6" fill="#455a64"/>
+<rect x="76" y="32" width="14" height="42" rx="6" fill="#455a64"/>
+<rect x="22" y="22" width="56" height="60" rx="16" style="fill:var(--rb,#58b4ff)" stroke="#1d4f8a" stroke-width="3"/>
+<rect x="30" y="30" width="40" height="24" rx="10" fill="#fff" stroke="#1d4f8a" stroke-width="2"/>
+<circle cx="42" cy="42" r="5.5" fill="#1b2a3a"/><circle cx="58" cy="42" r="5.5" fill="#1b2a3a"/>
+<circle cx="43.8" cy="40.2" r="1.8" fill="#fff"/><circle cx="59.8" cy="40.2" r="1.8" fill="#fff"/>
+<path d="M41 64 q9 7 18 0" stroke="#1d4f8a" fill="none" stroke-width="3.5" stroke-linecap="round"/>
+<polygon points="50,3 38,20 62,20" fill="#ffd23f" stroke="#b8860b" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>`;
+const SVG_GOAL=`<svg viewBox="0 0 100 100" aria-label="Enerji istasyonu"><rect x="22" y="28" width="56" height="52" rx="10" fill="#fff8d6" stroke="#c99700" stroke-width="5"/><rect x="40" y="16" width="20" height="14" rx="3" fill="#c99700"/><polygon points="54,36 38,58 49,58 45,76 63,51 52,51" fill="#f5a300" stroke="#b36b00" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const SVG_ROCK=`<svg viewBox="0 0 100 100" aria-label="Engel"><rect x="12" y="12" width="76" height="76" rx="12" fill="#e53935" stroke="#9b1c1c" stroke-width="5"/><path d="M30 30 L70 70 M70 30 L30 70" stroke="#fff" stroke-width="11" stroke-linecap="round"/></svg>`;
+const SVG_MV=`<svg viewBox="0 0 100 100" aria-label="Yer değiştirebilen engel"><rect x="12" y="12" width="76" height="76" rx="12" fill="#e53935" stroke="#9b1c1c" stroke-width="5" stroke-dasharray="11 6"/><path d="M26 40 H72 M61 28 L74 40 L61 52 M74 62 H28 M39 50 L26 62 L39 74" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const SVG_START=`<svg viewBox="0 0 100 100" aria-label="Başlangıç"><line x1="34" y1="18" x2="34" y2="84" stroke="#1d4f8a" stroke-width="7" stroke-linecap="round"/><polygon points="38,20 78,34 38,50" fill="#2f80ed" stroke="#1d4f8a" stroke-width="3" stroke-linejoin="round"/></svg>`;
+
+/* =====================================================================
+   DÜZEYLER VE GÖREV VERİLERİ
+   Harita simgeleri:  . yol   # sabit engel   X yer değiştirebilen engel
+                      S başlangıç   G enerji istasyonu
+   Komutlar: F=ileri  B=geri  L=sola dön  R=sağa dön
+   Yön: 0=Kuzey 1=Doğu 2=Güney 3=Batı
+===================================================================== */
+const LEVELS=[
+  {n:1,name:'Robotun İlk Görevi',badge:'Plan Ustası',emoji:'🧭'},
+  {n:2,name:'Değişen Yol',badge:'Engel Kaşifi',emoji:'🔍'},
+  {n:3,name:'Strateji Laboratuvarı',badge:'Alternatif Rota Uzmanı',emoji:'🗺️'},
+  {n:4,name:'Robot Programcısı',badge:'Robot Programcısı',emoji:'💻'}
+];
+
+const HINTS_PLAN=[
+  {t:'Enerji istasyonu hangi yönde?',fx:'goal'},
+  {t:'Robot şu anda hangi yöne bakıyor?',fx:'robot'},
+  {t:'Bu komuttan sonra robot hangi kareye gider? Önce aklından dene!',fx:null},
+  {t:'Dönme komutları robotu yerinden oynatmaz. Dönünce robotun yüzü nereye bakıyor?',fx:'robot'}
+];
+const HINTS_CHANGE=[
+  {t:'Engelin yeni yerini kontrol et.',fx:'obstacle'},
+  {t:'Enerji istasyonu hangi yönde?',fx:'goal'},
+  {t:'Hangi komuttan sonra robot engelin önüne geliyor?',fx:null},
+  {t:'Eski planının hangi kısmı hâlâ işe yarıyor, hangi kısmı yaramıyor?',fx:null}
+];
+const HINTS_FEWEST=[
+  {t:'Daha az adımla hedefe ulaşabilir misin? Komut kartlarını say!',fx:null},
+  {t:'Rotaların renklerine ve çizgilerine bak. Hangisinde daha az komut kartı var?',fx:null},
+  {t:'Her dönüş de bir komut kartıdır.',fx:null}
+];
+const HINTS_SAFE=[
+  {t:'Hangi rota engellerin yanından geçmiyor?',fx:'obstacle'},
+  {t:'Rotaları parmağınla takip et. Kırmızı engellere çok yaklaşıyor mu?',fx:'obstacle'},
+  {t:'Hedefe ulaşmak yetmez. Robot yolda güvende de olmalı!',fx:null}
+];
+const HINTS_FIX=[
+  {t:'Robot arkadaşının yolunu izle. Nerede duruyor?',fx:null},
+  {t:'Hangi komuttan sonra robot yanlış kareye gidiyor?',fx:null},
+  {t:'Hatalı komutu değiştirdiğinde robotun yolu açılıyor mu?',fx:'goal'},
+  {t:'Robot şu anda hangi yöne bakıyor? O komuttan sonra yönü doğru mu?',fx:'robot'}
+];
+
+const MISSIONS=[
+  { level:1,type:'plan',title:'Enerji istasyonuna git',dir:0,max:10,
+    grid:["..G..",".....",".#...",".....","S...."],
+    solution:['F','F','F','F','R','F','F'],
+    intro:'Önce hareketlerimi sıraya koymalıyız!',
+    instr:'Robotun enerji istasyonuna ulaşması için bir plan oluştur!',
+    hints:HINTS_PLAN },
+  { level:1,type:'plan',title:'Engelleri aş',dir:0,max:10,
+    grid:[".....",".#...","....G",".#.#.","S...."],
+    solution:['F','F','R','F','F','F','F'],
+    intro:'Kırmızı engellere dikkat edelim!',
+    instr:'Robotun enerji istasyonuna ulaşması için bir plan oluştur!',
+    hints:HINTS_PLAN },
+  { level:2,type:'change',title:'Yol değişti!',dir:1,max:14,
+    grid:[".....",".....","..X..",".....","S...G"],
+    before:['F','F','F','F'],
+    change:{to:[2,4]},
+    after:['F','L','F','R','F','F','R','F','L','F'],
+    intro:'Önce hareketlerimi sıraya koymalıyız! Sonra planı uygulayalım.',
+    instr:'Bir plan oluştur ve uygula. Dikkat: yolda bir değişiklik olabilir!',
+    hints:HINTS_CHANGE },
+  { level:2,type:'change',title:'Yeni alternatif rota',dir:0,max:14,
+    grid:["....G",".....","..#..","...X.","S...."],
+    before:['F','F','F','F','R','F','F','F','F'],
+    change:{to:[2,0]},
+    after:['F','F','F','R','F','F','F','F','L','F'],
+    intro:'Planımı yaparken yol değişirse ne yapacağız?',
+    instr:'Bir plan oluştur ve uygula. Yer değiştiren engele dikkat et!',
+    hints:HINTS_CHANGE },
+  { level:3,type:'choose',title:'En az komutlu rota',dir:0,
+    grid:["....G",".#.#.",".....",".#.#.","S...."],
+    criterion:'fewest',
+    criterionText:'Görev: En az komut kartı olan (en kısa planlı) rotayı bul.',
+    wrongText:'Bu rota hedefe ulaşıyor ama daha az komut kartı olan bir rota var. Kartları say ve karşılaştır!',
+    need:'Daha az adım içeren rota',
+    routes:[
+      {cmds:['R','F','F','L','F','F','R','F','F','L','F','F']},
+      {cmds:['F','F','F','F','R','F','F','F','F']},
+      {cmds:['F','F','R','F','F','L','F','F','R','F','F']}
+    ],
+    intro:'Üç rota var! Hangisi daha uygun olabilir?',
+    instr:'Robotun enerji istasyonuna ulaşması için hangi rota daha uygun?',
+    hints:HINTS_FEWEST },
+  { level:3,type:'choose',title:'Güvenli rota',dir:0,
+    grid:["....G",".##..",".....",".....","S...."],
+    criterion:'safe',
+    criterionText:'Görev: Engellerden uzak duran güvenli rotayı seç.',
+    wrongText:'Bu rota hedefe ulaşıyor ama engellerin çok yakınından geçiyor. Daha güvenli bir rota var mı?',
+    need:'Engellerden uzak duran rota',
+    routes:[
+      {cmds:['F','F','F','F','R','F','F','F','F']},
+      {cmds:['F','F','R','F','F','F','F','L','F','F']},
+      {cmds:['R','F','F','F','F','L','F','F','F','F']}
+    ],
+    intro:'Güvenli bir yol seçmek çok önemli!',
+    instr:'Robotun enerji istasyonuna ulaşması için hangi rota daha uygun?',
+    hints:HINTS_SAFE },
+  { level:4,type:'fix',title:'Robot arkadaşının hatası',dir:0,
+    grid:[".....","..G..","...#.",".....","S...."],
+    fix:{plan:['F','F','R','F','F','F','F'],index:5,options:['F','L','R']},
+    intro:'Robot arkadaşımın planında bir sorun var. Bakalım bulabilecek miyiz?',
+    instr:'Robot arkadaşının planında bir sorun var. Hatalı komutu bul ve düzelt!',
+    hints:HINTS_FIX },
+  { level:4,type:'fix',title:'Hatalı dönüş',dir:3,
+    grid:["G....",".#...",".#.#.",".....","....S"],
+    fix:{plan:['F','F','L','F','F','F','F','L','F','F'],index:2,options:['L','F','R']},
+    intro:'Bu kez robot arkadaşım yanlış tarafa dönmüş olabilir!',
+    instr:'Robot arkadaşının planında bir sorun var. Hatalı komutu bul ve düzelt!',
+    hints:HINTS_FIX }
+];
+
+/* =====================================================================
+   HARİTA VE SİMÜLASYON (saf fonksiyonlar)
+===================================================================== */
+function parseGrid(rows){
+  const h=rows.length,w=rows[0].length;let start=null,goal=null;const rocks=[];
+  rows.forEach((r,y)=>{
+    if(r.length!==w)throw new Error('Harita satır uzunlukları eşit değil');
+    for(let x=0;x<w;x++){
+      const ch=r[x];
+      if(ch==='S')start={x,y};
+      else if(ch==='G')goal={x,y};
+      else if(ch==='#')rocks.push({x,y,mv:false});
+      else if(ch==='X')rocks.push({x,y,mv:true});
+    }
+  });
+  return {w,h,start,goal,rocks};
+}
+MISSIONS.forEach(m=>{m.P=parseGrid(m.grid);});
+
+function mapFrom(P,rocks){
+  return {w:P.w,h:P.h,start:P.start,goal:P.goal,rocks:new Set(rocks.map(o=>o.x+','+o.y))};
+}
+function turnRobot(d,c){return c==='R'?(d+1)%4:(d+3)%4;}                    // robotun yönünü değiştir
+function moveRobot(p,d,c){const dd=c==='F'?d:(d+2)%4;return {x:p.x+DX[dd],y:p.y+DY[dd]};} // bir kare hareket
+function checkCollision(map,p){                                             // engel / duvar kontrolü
+  if(p.x<0||p.y<0||p.x>=map.w||p.y>=map.h)return 'wall';
+  if(map.rocks.has(p.x+','+p.y))return 'rock';
+  return null;
+}
+function checkGoal(map,p){return p.x===map.goal.x&&p.y===map.goal.y;}       // hedef kontrolü
+
+function simulate(map,dir,cmds){
+  let x=map.start.x,y=map.start.y,d=dir;
+  const steps=[],path=[{x,y}];let result='end',failIndex=-1;
+  for(let i=0;i<cmds.length;i++){
+    const c=cmds[i];
+    if(c==='L'||c==='R'){d=turnRobot(d,c);steps.push({i,c,ev:'turn',x,y,d});continue;}
+    const np=moveRobot({x,y},d,c);
+    const hit=checkCollision(map,np);
+    if(hit){steps.push({i,c,ev:'bump',x,y,d,why:hit,tx:np.x,ty:np.y});result=hit;failIndex=i;break;}
+    x=np.x;y=np.y;path.push({x,y});steps.push({i,c,ev:'move',x,y,d});
+    if(checkGoal(map,{x,y})){result='goal';break;}
+  }
+  if(result==='end')failIndex=cmds.length-1;
+  return {steps,path,result,failIndex,last:{x,y,d}};
+}
+
+function reachable(map){ // hedefe bir yol var mı? (yönden bağımsız)
+  const seen=new Set([map.start.x+','+map.start.y]),q=[map.start];
+  while(q.length){
+    const p=q.shift();
+    if(checkGoal(map,p))return true;
+    for(let d=0;d<4;d++){
+      const n={x:p.x+DX[d],y:p.y+DY[d]},k=n.x+','+n.y;
+      if(!seen.has(k)&&!checkCollision(map,n)){seen.add(k);q.push(n);}
+    }
+  }
+  return false;
+}
+
+function routeStats(m,cmds){
+  const map=mapFrom(m.P,m.P.rocks),sim=simulate(map,m.dir,cmds);let adj=0;
+  sim.path.forEach(p=>{for(let d=0;d<4;d++){if(map.rocks.has((p.x+DX[d])+','+(p.y+DY[d]))){adj++;break;}}});
+  return {sim,len:cmds.length,adj,ok:sim.result==='goal'};
+}
+function compareRoutes(m){ // ölçüte uyan tüm rotaların indeksleri
+  const st=m.routes.map(r=>routeStats(m,r.cmds));
+  const metric=s=>m.criterion==='fewest'?s.len:s.adj;
+  const okList=st.filter(s=>s.ok);
+  if(!okList.length)return [];
+  const best=Math.min.apply(null,okList.map(metric));
+  const res=[];st.forEach((s,i)=>{if(s.ok&&metric(s)===best)res.push(i);});
+  return res;
+}
+
+function selfTest(){ // her görev için veri doğrulaması
+  const bad=[];
+  MISSIONS.forEach((m,i)=>{
+    const tag='Görev '+(i+1),P=m.P,base=mapFrom(P,P.rocks);
+    if(!P.start||!P.goal){bad.push(tag+': başlangıç/hedef yok');return;}
+    if(m.type==='plan'){
+      if(simulate(base,m.dir,m.solution).result!=='goal')bad.push(tag+': çözüm hedefe ulaşmıyor');
+      if(m.solution.length>m.max)bad.push(tag+': çözüm komut sınırını aşıyor');
+    }else if(m.type==='change'){
+      const to=m.change.to,after=P.rocks.map(o=>o.mv?{x:to[0],y:to[1],mv:true}:o),am=mapFrom(P,after);
+      if(simulate(base,m.dir,m.before).result!=='goal')bad.push(tag+': ilk plan çalışmıyor');
+      if(simulate(am,m.dir,m.before).result==='goal')bad.push(tag+': eski plan hâlâ geçerli');
+      if(simulate(am,m.dir,m.after).result!=='goal')bad.push(tag+': yeni rota çalışmıyor');
+      if(!reachable(am))bad.push(tag+': yeni haritada yol yok');
+      if((to[0]===P.start.x&&to[1]===P.start.y)||(to[0]===P.goal.x&&to[1]===P.goal.y))bad.push(tag+': engel başlangıç/hedefe taşındı');
+      if(P.rocks.some(o=>!o.mv&&o.x===to[0]&&o.y===to[1]))bad.push(tag+': engel başka engelin üstüne taşındı');
+      if(m.after.length>m.max||m.before.length>m.max)bad.push(tag+': komut sınırı yetersiz');
+    }else if(m.type==='choose'){
+      m.routes.forEach((r,k)=>{if(!routeStats(m,r.cmds).ok)bad.push(tag+': rota '+'ABC'[k]+' hedefe ulaşmıyor');});
+      const c=compareRoutes(m);
+      if(c.length<1||c.length>=m.routes.length)bad.push(tag+': ölçüt rotaları ayırt etmiyor');
+    }else if(m.type==='fix'){
+      const f=m.fix;
+      if(simulate(base,m.dir,f.plan).result==='goal')bad.push(tag+': hatalı plan aslında doğru');
+      const good=f.options.filter(o=>{const p=f.plan.slice();p[f.index]=o;return simulate(base,m.dir,p).result==='goal';});
+      if(good.length<1)bad.push(tag+': hiçbir düzeltme çalışmıyor');
+      if(good.length===f.options.length)bad.push(tag+': tüm seçenekler doğru');
+      if(f.options.indexOf(f.plan[f.index])<0)bad.push(tag+': hatalı komut seçeneklerde yok');
+    }
+  });
+  return bad;
+}
+
+/* =====================================================================
+   OYUN DURUMU
+===================================================================== */
+const S={
+  mi:0,level:0,plan:[],phase:'edit',running:false,token:0,sound:true,stars:0,done:[],badges:[],
+  hintIdx:0,obs:[],rb:{x:0,y:0,d:0,angle:0},trail:[],changed:false,failInfo:null,
+  selRoute:null,showRoutes:false,check:null,fix:{sel:null,found:false,choice:null},
+  fb:'',fbType:'',successMsg:''
+};
+const M=()=>MISSIONS[S.mi];
+
+/* ---------- ekranlar, ses, konuşma ---------- */
+function showScreen(n){
+  $$('.screen').forEach(s=>s.classList.toggle('active',s.id==='screen-'+n));
+  window.scrollTo(0,0);
+}
+function speak(t){
+  if(!S.sound||!('speechSynthesis' in window))return;
+  try{
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(String(t).replace(/[^\p{L}\p{N}\s.,!?'’-]/gu,''));
+    u.lang='tr-TR';u.rate=.95;u.pitch=1.2;window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function toggleSound(){
+  S.sound=!S.sound;
+  if(!S.sound){try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}}
+  updateSoundButtons();
+}
+function updateSoundButtons(){
+  $('#btn-sound').textContent=S.sound?'🔊':'🔇';
+  $('#btn-sound-menu').textContent=S.sound?'🔊 Ses: Açık':'🔇 Ses: Kapalı';
+}
+function robo(t,spk){
+  $('#robo-bubble').textContent=t;
+  if(spk!==false)speak(t);
+}
+function setFeedback(t,type){
+  S.fb=t||'';S.fbType=type||'';
+  const f=$('#feedback');f.className='fb '+(type||'');f.textContent=S.fb;
+}
+function setBanner(t){
+  const b=$('#board-banner');b.textContent=t||'';b.className='board-banner'+(t?' on':'');
+}
+
+/* ---------- üst çubuk ---------- */
+function changeLevel(n){ // düzey değiştirme
+  S.level=n;
+  const L=LEVELS[n-1];
+  $('#level-pill').textContent='Düzey '+n+' · '+L.name;
+}
+function updateTop(){
+  $('#mission-label').textContent='Görev '+(S.mi+1)+' / '+MISSIONS.length;
+  $('#dots').innerHTML=MISSIONS.map((m,i)=>'<i class="'+(S.done[i]?'done':'')+(i===S.mi?' cur':'')+'"></i>').join('');
+  $('#stars').textContent='⭐ '+S.stars;
+  const n=S.done.filter(Boolean).length;
+  $('#energy-fill').style.width=(10+90*n/MISSIONS.length)+'%';
+}
+
+/* ---------- harita çizimi ---------- */
+function cellEl(x,y){return $('.cell[data-x="'+x+'"][data-y="'+y+'"]');}
+function resetRobot(){
+  const m=M();
+  S.rb={x:m.P.start.x,y:m.P.start.y,d:m.dir,angle:m.dir*90};
+  S.trail=[{x:m.P.start.x,y:m.P.start.y}];
+}
+function curMap(){return mapFrom(M().P,S.obs);}
+
+function renderBoard(){
+  const m=M(),P=m.P;let g='';
+  for(let y=0;y<P.h;y++)for(let x=0;x<P.w;x++){
+    const ob=S.obs.find(o=>o.x===x&&o.y===y);
+    let cls='tile path',inner='';
+    if(x===P.start.x&&y===P.start.y){cls='tile start';inner=SVG_START;}
+    else if(x===P.goal.x&&y===P.goal.y){cls='tile goal';inner=SVG_GOAL;}
+    else if(ob){cls='tile rock'+(ob.mv?' mv':'');inner=ob.mv?SVG_MV:SVG_ROCK;}
+    g+='<div class="cell" data-x="'+x+'" data-y="'+y+'"><div class="'+cls+'">'+inner+'</div></div>';
+  }
+  $('#board').innerHTML=
+    '<div class="inner" style="aspect-ratio:'+P.w+'/'+P.h+'">'+
+    '<div class="grid" style="grid-template-columns:repeat('+P.w+',1fr);grid-template-rows:repeat('+P.h+',1fr)">'+g+'</div>'+
+    '<svg id="overlay" class="overlay" viewBox="0 0 '+P.w+' '+P.h+'" preserveAspectRatio="none"></svg>'+
+    '<div id="robot" class="robot" style="width:'+(100/P.w)+'%;height:'+(100/P.h)+'%"><div id="robot-rot" class="robot-rot">'+ROBOT_SVG+'</div></div>'+
+    '</div>';
+  $('#board').classList.toggle('friend',m.type==='fix');
+  placeRobot(true);drawOverlay();
+}
+function placeRobot(noAnim){
+  const r=$('#robot'),rot=$('#robot-rot');if(!r)return;
+  const P=M().P;
+  if(noAnim){r.classList.add('notrans');rot.classList.add('notrans');}
+  r.style.left=(S.rb.x*100/P.w)+'%';r.style.top=(S.rb.y*100/P.h)+'%';
+  rot.style.transform='rotate('+S.rb.angle+'deg)';
+  if(noAnim){void r.offsetWidth;r.classList.remove('notrans');rot.classList.remove('notrans');}
+}
+function updateFacing(){
+  $('#facing').innerHTML='Robot şu yöne bakıyor: <b>'+DIRA[S.rb.d]+' '+DIRN[S.rb.d]+'</b>';
+}
+function pts(path,off){return path.map(p=>(p.x+.5+off).toFixed(3)+','+(p.y+.5+off).toFixed(3)).join(' ');}
+function drawOverlay(){
+  const ov=$('#overlay');if(!ov)return;
+  const m=M();let s='<defs>';
+  const routes=(m.type==='choose'&&S.showRoutes)?m.routes:[];
+  routes.forEach((r,i)=>{
+    s+='<marker id="ar'+i+'" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+ROUTE_STYLE[i].c+'"/></marker>';
+  });
+  s+='</defs>';
+  routes.forEach((r,i)=>{
+    const st=ROUTE_STYLE[i],path=m.routeSim[i].path;
+    const op=S.selRoute==null?0.92:(S.selRoute===i?1:0.2);
+    const sw=S.selRoute===i?0.17:0.13;
+    s+='<g opacity="'+op+'"><polyline points="'+pts(path,st.off)+'" fill="none" stroke="'+st.c+'" stroke-width="'+sw+'" stroke-linecap="round" stroke-linejoin="round"'+(st.dash?' stroke-dasharray="'+st.dash+'"':'')+' marker-mid="url(#ar'+i+')" marker-end="url(#ar'+i+')"/>';
+    const k=path[Math.min(path.length-1,Math.max(1,Math.round((path.length-1)*(0.3+0.2*i))))];
+    s+='<circle cx="'+(k.x+.5+st.off)+'" cy="'+(k.y+.5+st.off)+'" r="0.17" fill="'+st.c+'" stroke="#fff" stroke-width="0.03"/>'+
+       '<text x="'+(k.x+.5+st.off)+'" y="'+(k.y+.5+st.off)+'" font-size="0.22" font-weight="900" text-anchor="middle" dominant-baseline="central" fill="#fff">'+'ABC'[i]+'</text></g>';
+  });
+  if(S.trail.length>1){
+    s+='<polyline points="'+pts(S.trail,0)+'" fill="none" stroke="#0b3d91" stroke-opacity=".7" stroke-width="0.09" stroke-dasharray="0.14 0.12" stroke-linecap="round" stroke-linejoin="round"/>';
+    S.trail.forEach(p=>{s+='<circle cx="'+(p.x+.5)+'" cy="'+(p.y+.5)+'" r="0.06" fill="#0b3d91" fill-opacity=".7"/>';});
+  }
+  ov.innerHTML=s;
+}
+function clearMarks(){
+  $$('.cell.last,.cell.hit,.cell.hl,.cell.pop,.cell.leaving').forEach(c=>c.classList.remove('last','hit','hl','pop','leaving'));
+  const r=$('#robot');if(r)r.classList.remove('hl','bump');
+  const b=$('#board');if(b)b.classList.remove('wallhit');
+}
+function resetAttemptView(){
+  resetRobot();placeRobot(true);clearMarks();drawOverlay();updateFacing();
+}
+function flash(el,cls){if(!el)return;el.classList.add(cls||'hl');setTimeout(()=>el.classList.remove(cls||'hl'),3400);}
+function starBurst(){
+  const wrap=$('.board-wrap');if(!wrap)return;
+  for(let i=0;i<10;i++){
+    const s=document.createElement('span');s.className='star';s.textContent='⭐';
+    const a=Math.PI*2*i/10,r=90+Math.random()*60;
+    s.style.setProperty('--dx',Math.cos(a)*r+'px');s.style.setProperty('--dy',Math.sin(a)*r+'px');
+    wrap.appendChild(s);setTimeout(()=>s.remove(),1300);
+  }
+}
+
+/* =====================================================================
+   PLAN PANELİ (komut ekleme / silme / temizleme)
+===================================================================== */
+function editable(){
+  if(S.running||S.phase==='success')return false;
+  if(S.phase==='failed'||S.phase==='inspect')resetAttempt(true);
+  return true;
+}
+function addCommand(c){ // plan komutu ekleme
+  if(!editable())return;
+  const m=M();
+  if(S.plan.length>=m.max){setFeedback('Plan çok uzun oldu! Bir komutu silebilir ya da planı temizleyebilirsin.','warn');return;}
+  S.plan.push(c);setFeedback('');renderArea();
+}
+function deleteLast(){ // son komutu silme
+  if(!editable())return;
+  if(S.plan.length)S.plan.pop();
+  setFeedback('');renderArea();
+}
+function clearPlan(){ // planı temizleme
+  if(!editable())return;
+  S.plan=[];setFeedback('');renderArea();
+}
+function resetAttempt(silent){ // robotu başa al, planı koru
+  S.phase='edit';S.failInfo=null;
+  resetAttemptView();
+  if(!silent){renderArea();robo('Hadi yeni bir plan yapalım!');}
+}
+
+/* =====================================================================
+   PLAN UYGULAMA VE ROBOT HAREKETİ
+===================================================================== */
+function markCard(i){
+  $$('#area .cards .card').forEach(c=>c.classList.toggle('run',Number(c.dataset.i)===i));
+}
+function bumpEffect(st){
+  const r=$('#robot');
+  if(r){r.classList.remove('bump');void r.offsetWidth;r.classList.add('bump');}
+  if(st.why==='rock'){flash(cellEl(st.tx,st.ty),'hit');}
+  else{const b=$('#board');b.classList.remove('wallhit');void b.offsetWidth;b.classList.add('wallhit');}
+}
+async function playSteps(sim,tk,delay){ // adım adım oynat
+  delay=delay||650;
+  for(const st of sim.steps){
+    if(tk!==S.token)return false;
+    markCard(st.i);
+    if(st.ev==='turn'){S.rb.angle+=(st.c==='R'?90:-90);S.rb.d=st.d;}
+    else if(st.ev==='move'){S.rb.x=st.x;S.rb.y=st.y;S.trail.push({x:st.x,y:st.y});}
+    else if(st.ev==='bump'){bumpEffect(st);}
+    placeRobot();updateFacing();drawOverlay();
+    await sleep(delay);
+  }
+  return tk===S.token;
+}
+async function applyPlan(){ // PLANI UYGULA
+  if(S.running||S.phase==='success')return;
+  const m=M();
+  if(!S.plan.length){setFeedback('Önce plan oluştur: yukarıdan bir komut seç!','warn');return;}
+  if(m.type==='change'&&!S.changed){await doChange();return;}
+  await runPlan(S.plan.slice());
+}
+async function runPlan(cmds){
+  const tk=++S.token;
+  S.running=true;S.phase='running';S.failInfo=null;
+  resetAttemptView();setFeedback('');renderArea();
+  const sim=simulate(curMap(),M().dir,cmds);
+  const ok=await playSteps(sim,tk);
+  if(!ok)return;
+  markCard(-1);S.running=false;
+  if(sim.result==='goal')onGoal();else onFail(sim);
+}
+function onGoal(){
+  const m=M();
+  let msg='Harika! Planın robotu hedefe ulaştırdı!';
+  if(m.type==='change')msg+=' Yeni yola göre planını düzenledin.';
+  completeMission(msg,'Başardık! Enerji istasyonuna ulaştım!');
+}
+function onFail(sim){
+  const bump=sim.steps[sim.steps.length-1];
+  S.failInfo={index:sim.failIndex,why:sim.result,last:sim.last,hit:sim.result==='rock'?{x:bump.tx,y:bump.ty}:null};
+  S.phase='failed';
+  setFeedback('Planını birlikte yeniden inceleyelim. Başka bir yol deneyebilirsin.','info');
+  renderArea();
+  robo('Bu rota hedefe ulaşmamı sağlamadı. Başka bir yol deneyelim mi?');
+}
+function inspectRoute(){ // ROTAYI İNCELE
+  if(S.phase!=='failed')return;
+  S.phase='inspect';
+  const f=S.failInfo;
+  const c=cellEl(f.last.x,f.last.y);if(c)c.classList.add('last');
+  if(f.hit){const h=cellEl(f.hit.x,f.hit.y);if(h)h.classList.add('hit');}
+  renderArea();
+  robo('Robotun durduğu kareyi işaretledim. Hangi komuttan sonra yol değişti?');
+}
+function inspectText(){
+  const f=S.failInfo;if(!f)return '';
+  if(f.why==='rock')return 'Robot bir engelin önünde durdu. Kırmızı komut, robotun takıldığı hareket.';
+  if(f.why==='wall')return 'Robot haritanın kenarına geldi ve duvarın önünde durdu. Kırmızı komut, robotun takıldığı hareket.';
+  return 'Komutların hepsi bitti ama robot enerji istasyonuna ulaşamadı. Robot işaretli karede kaldı.';
+}
+
+/* ---------- engel değişimi (Düzey 2) ---------- */
+function moveObstacle(to){ // engeli taşıma
+  const o=S.obs.find(x=>x.mv);
+  o.x=to[0];o.y=to[1];
+}
+function validateRoute(cmds){ // rotayı doğrulama
+  return simulate(curMap(),M().dir,cmds);
+}
+async function doChange(){
+  const m=M(),tk=++S.token;
+  S.running=true;S.phase='running';renderArea();
+  robo('Dikkat! Yol değişti. Planımızı yenileyelim!');
+  setBanner('⚠️ Dikkat! Yol değişti. Planını yeniden düzenle!');
+  const mv=S.obs.find(o=>o.mv);
+  const old=cellEl(mv.x,mv.y);if(old)old.classList.add('leaving');
+  await sleep(800);if(tk!==S.token)return;
+  moveObstacle(m.change.to);S.changed=true;
+  renderBoard();
+  const nc=cellEl(m.change.to[0],m.change.to[1]);if(nc)nc.classList.add('pop');
+  setTimeout(()=>flash(nc,'hl'),700);
+  await sleep(900);if(tk!==S.token)return;
+  // Eski plan yeni haritaya göre kontrol edilir ama otomatik kabul edilmez
+  const sim=validateRoute(S.plan);
+  S.running=false;S.phase='edit';S.hintIdx=0;
+  if(sim.result==='goal')setFeedback('Engel yer değiştirdi. Eski planın yine de işe yarayabilir. Dikkatle incele ve yeniden dene!','info');
+  else setFeedback('Engel yer değiştirdi ve eski planın artık hedefe ulaşmıyor. Hangi komutları değiştirmelisin?','warn');
+  renderArea();
+}
+
+/* =====================================================================
+   ROTA SEÇME (Düzey 3)
+===================================================================== */
+function pickRoute(i){
+  if(S.running||S.phase==='success'||S.phase==='reason')return;
+  S.selRoute=i;S.check=null;S.phase='edit';
+  setFeedback('');resetAttemptView();renderArea();
+}
+async function checkRoute(){
+  if(S.running||S.selRoute==null||S.phase==='success'||S.phase==='reason')return;
+  const m=M(),i=S.selRoute,tk=++S.token;
+  S.running=true;S.phase='running';S.check=null;
+  resetAttemptView();setFeedback('');renderArea();
+  const sim=simulate(curMap(),m.dir,m.routes[i].cmds);
+  const ok=await playSteps(sim,tk,380);
+  if(!ok)return;
+  S.running=false;
+  const reaches=sim.result==='goal',noObs=sim.result!=='rock'&&sim.result!=='wall';
+  const crit=compareRoutes(m).indexOf(i)>=0;
+  S.check={reaches,noObs,crit,i};
+  if(reaches&&crit){
+    S.phase='reason';renderArea();
+    robo('Harika seçim! Bu rotayı neden seçtin?');
+  }else{
+    S.phase='edit';
+    setFeedback(m.wrongText,'warn');renderArea();
+    robo('Bu rota ölçüte uymuyor. Başka bir rota deneyelim!');
+    await sleep(700);if(tk!==S.token)return;
+    resetAttemptView();
+  }
+}
+function answerReason(k){
+  if(S.phase!=='reason')return;
+  const m=M(),need=m.criterion==='fewest'?'steps':'safe';
+  if(k===need)setFeedback('Harika düşündün! Seçimini doğru ölçütle açıkladın.','good');
+  else if(k==='goal')setFeedback('Doğru, rota enerji istasyonuna ulaşıyor. Bu görevde ayrıca şuna bakmalıydık: '+m.need+'.','info');
+  else setFeedback('İyi bir düşünce! Bu görevdeki asıl ölçüt şuydu: '+m.need+'.','info');
+  completeMission('Harika seçim! Rotayı ölçüte göre değerlendirdin!','Başardık! Doğru rotayı seçtik!');
+}
+
+/* =====================================================================
+   HATA DÜZELTME (Düzey 4)
+===================================================================== */
+function pickCard(i){
+  if(S.running||S.phase==='success')return;
+  const m=M();
+  resetAttemptView();S.phase='edit';S.fix.sel=i;S.fix.choice=null;
+  S.plan=m.fix.plan.slice();
+  if(i===m.fix.index){
+    S.fix.found=true;
+    setFeedback('Doğru kart! Şimdi bu komutun yerine hangisi gelmeli?','good');
+    robo('Harika gözlem! Hatalı komutu buldun!');
+  }else{
+    S.fix.found=false;
+    setFeedback('Komutları sırayla incele. Bu hareketten sonra robot nereye gidiyor?','warn');
+  }
+  renderArea();
+}
+async function watchFriend(){
+  if(S.running||S.phase==='success')return;
+  const m=M(),tk=++S.token;
+  S.running=true;S.phase='running';S.plan=m.fix.plan.slice();S.fix.choice=null;
+  resetAttemptView();renderArea();
+  robo('Robot arkadaşım planını uyguluyor. Nerede duracak?');
+  const sim=simulate(curMap(),m.dir,m.fix.plan);
+  const ok=await playSteps(sim,tk);
+  if(!ok)return;
+  markCard(-1);S.running=false;S.phase='edit';
+  setFeedback('Robot arkadaşın burada durdu. Hangi komuttan sonra yolu yanlış gitti?','info');
+  renderArea();
+}
+function fixCommand(c){ // hatalı komutu düzeltme
+  if(S.running||!S.fix.found||S.phase==='success')return;
+  const m=M(),plan=m.fix.plan.slice();
+  plan[m.fix.index]=c;S.fix.choice=c;S.plan=plan;
+  return runFix(plan);
+}
+async function runFix(plan){
+  const m=M(),tk=++S.token;
+  S.running=true;S.phase='running';resetAttemptView();setFeedback('');renderArea();
+  const sim=simulate(curMap(),m.dir,plan);
+  const ok=await playSteps(sim,tk);
+  if(!ok)return;
+  markCard(-1);S.running=false;
+  if(sim.result==='goal'){
+    completeMission('Harika! Robot arkadaşının planını düzelttin!','Harika! Robot arkadaşımın planını düzelttin!');
+  }else{
+    S.phase='edit';
+    setFeedback('Komutları sırayla incele. Bu hareketten sonra robot nereye gidiyor?','warn');
+    robo('Bu yol işe yaramadı. Başka bir yol deneyebiliriz!');
+    renderArea();
+    await sleep(900);if(tk!==S.token)return;
+    resetAttemptView();
+  }
+}
+
+/* =====================================================================
+   GÖREV İLERLEMESİ
+===================================================================== */
+function completeMission(msg,roboMsg){ // görev tamamlama
+  S.phase='success';S.running=false;S.successMsg=msg;
+  if(!S.done[S.mi]){S.done[S.mi]=true;S.stars++;}
+  updateTop();renderArea();starBurst();
+  if(roboMsg)robo(roboMsg);
+}
+function isLevelEnd(){
+  return S.mi===MISSIONS.length-1||MISSIONS[S.mi+1].level!==M().level;
+}
+function nextMission(){
+  if(S.phase!=='success')return;
+  const m=M(),last=S.mi===MISSIONS.length-1;
+  if(isLevelEnd()){
+    const L=LEVELS[m.level-1];
+    S.badges.push(L);
+    showModal('<div class="emoji">🏅</div><h2>'+L.badge+'</h2><p>Düzey '+L.n+' tamamlandı!<br><b>'+L.emoji+' '+L.badge+'</b> rozetini kazandın.</p>',
+      last?'🎉 SONUCA GİT':'SIRADAKİ DÜZEY ▶',
+      function(){if(last)showEnd();else loadMission(S.mi+1);});
+    speak(L.badge+' rozetini kazandın!');
+  }else loadMission(S.mi+1);
+}
+function showModal(html,btn,cb){
+  const box=$('#modal-box');
+  box.innerHTML=html+'<button class="btn primary big" id="modal-ok">'+btn+'</button>';
+  $('#modal').classList.remove('hidden');
+  $('#modal-ok').onclick=function(){$('#modal').classList.add('hidden');if(cb)cb();};
+}
+function loadMission(i){
+  S.token++;S.running=false;S.mi=i;
+  const m=M();
+  if(S.level!==m.level)changeLevel(m.level);
+  S.plan=m.type==='fix'?m.fix.plan.slice():[];
+  S.obs=m.P.rocks.map(o=>({x:o.x,y:o.y,mv:o.mv}));
+  S.changed=false;S.phase='edit';S.failInfo=null;S.selRoute=null;S.check=null;
+  S.fix={sel:null,found:false,choice:null};S.hintIdx=0;S.successMsg='';
+  S.showRoutes=m.type==='choose';
+  if(m.type==='choose')m.routeSim=m.routes.map(r=>simulate(mapFrom(m.P,m.P.rocks),m.dir,r.cmds));
+  resetRobot();
+  showScreen('game');
+  renderBoard();updateTop();updateFacing();setBanner('');setFeedback('');
+  $('#instruction').innerHTML='<div class="mtitle">Görev '+(i+1)+' · '+m.title+'</div><div class="itext">'+m.instr+'</div>'+(m.criterionText?'<div class="crit">🎯 '+m.criterionText+'</div>':'');
+  renderArea();
+  robo(m.intro);
+}
+
+/* =====================================================================
+   PANEL ALANI (görev türüne göre)
+===================================================================== */
+function cardHTML(c,i,cls,tag,act){
+  tag=tag||'div';
+  return '<'+tag+' class="card c-'+c+' '+(cls||'')+'" data-i="'+i+'"'+(act?' data-act="'+act+'"':'')+'><span class="num">'+(i+1)+'</span><span class="ci">'+CMD[c].i+'</span><span class="tx">'+CMD[c].s+'</span></'+tag+'>';
+}
+function successBox(){
+  if(S.phase!=='success')return '';
+  return '<div class="success"><div class="big">⭐</div><div class="msg">'+S.successMsg+'</div>'+
+    '<button class="btn primary big" data-act="next">'+(isLevelEnd()?'🏅 ROZETİ AL':'SIRADAKİ GÖREV ▶')+'</button></div>';
+}
+function areaPlan(m){
+  const lock=S.phase==='running'||S.phase==='success',insp=S.phase==='inspect',fi=S.failInfo;
+  const btns=['F','B','L','R'].map(c=>'<button class="cmd c-'+c+'" data-act="add" data-c="'+c+'"'+(lock?' disabled':'')+'><span class="ci">'+CMD[c].i+'</span><span>'+CMD[c].l+'</span></button>').join('');
+  const cards=S.plan.length?S.plan.map((c,i)=>{
+    let cl='';if(insp&&fi){if(i===fi.index)cl='bad';else if(i>fi.index)cl='skip';}
+    return cardHTML(c,i,cl);
+  }).join(''):'<div class="empty">Henüz komut yok. Yukarıdan bir komut seç!</div>';
+  let extra='';
+  if(S.phase==='failed')extra='<div class="failbox"><div class="say">🤖 Robot: “Bu rota hedefe ulaşmamı sağlamadı. Başka bir yol deneyelim mi?”</div><div class="row"><button class="btn primary" data-act="replan">PLANI YENİDEN DÜZENLE</button><button class="btn" data-act="inspect">ROTAYI İNCELE</button></div></div>';
+  if(insp)extra='<div class="failbox"><div class="say">🔍 '+inspectText()+'</div><div class="row"><button class="btn primary" data-act="replan">PLANI YENİDEN DÜZENLE</button></div></div>';
+  return '<div class="cmds">'+btns+'</div>'+
+    '<div class="plan-box"><div class="plan-title"><span>Robotun planı:</span><small>Komut: '+S.plan.length+' / '+m.max+'</small></div><div class="cards">'+cards+'</div></div>'+
+    '<div class="plan-actions">'+
+      '<button class="btn primary" data-act="apply"'+(lock?' disabled':'')+'>▶ PLANI UYGULA</button>'+
+      '<button class="btn" data-act="undo"'+(lock?' disabled':'')+'>⌫ SON KOMUTU SİL</button>'+
+      '<button class="btn" data-act="clear"'+(lock?' disabled':'')+'>🗑 PLANI TEMİZLE</button>'+
+    '</div>'+extra+successBox();
+}
+function areaChoose(m){
+  const lock=S.phase==='running'||S.phase==='success'||S.phase==='reason';
+  const routes=m.routes.map((r,i)=>{
+    const st=ROUTE_STYLE[i];
+    return '<button class="route-card'+(S.selRoute===i?' sel':'')+'" data-act="pick" data-i="'+i+'" style="--rc:'+st.c+'"'+(lock?' disabled':'')+'>'+
+      '<div class="rhead"><span class="rbadge">'+'ABC'[i]+'</span>'+
+      '<svg width="60" height="12" viewBox="0 0 60 12" aria-hidden="true"><line x1="3" y1="6" x2="57" y2="6" stroke="'+st.c+'" stroke-width="4" stroke-linecap="round"'+(st.sw!=='none'?' stroke-dasharray="'+st.sw+'"':'')+'/></svg>'+
+      '<b>'+'ABC'[i]+' ROTASI</b></div>'+
+      '<div class="mini">'+r.cmds.map(c=>'<span class="mc c-'+c+'" title="'+CMD[c].s+'">'+CMD[c].i+'</span>').join('')+'</div></button>';
+  }).join('');
+  let extra='';
+  if(S.check){
+    const k=S.check;
+    extra+='<div class="checks-box"><ul>'+
+      '<li>'+(k.noObs?'✅ Engellerden geçmiyor':'❌ Engele çarpıyor')+'</li>'+
+      '<li>'+(k.reaches?'✅ Enerji istasyonuna ulaşıyor':'❌ Enerji istasyonuna ulaşmıyor')+'</li>'+
+      '<li>'+(k.crit?'✅ Görevdeki ölçüte uygun':'❌ Görevdeki ölçüte uygun değil')+'</li></ul></div>';
+  }
+  if(S.phase==='reason'||(S.phase==='success'&&S.check)){
+    if(S.phase==='reason')extra+='<div class="reasonbox"><b>Bu rotayı neden seçtin?</b>'+
+      '<button class="btn" data-act="reason" data-k="steps">🟦 Daha az adım içeriyor.</button>'+
+      '<button class="btn" data-act="reason" data-k="safe">🛡️ Engellerden uzak duruyor.</button>'+
+      '<button class="btn" data-act="reason" data-k="goal">⚡ Enerji istasyonuna ulaşıyor.</button></div>';
+  }
+  return '<div class="plan-title" style="margin-top:12px"><span>Robotun enerji istasyonuna ulaşması için hangi rota daha uygun?</span></div>'+
+    '<div class="routes">'+routes+'</div>'+
+    '<div class="plan-actions"><button class="btn primary" data-act="check"'+((lock||S.selRoute==null)?' disabled':'')+'>✔ ROTAYI KONTROL ET</button></div>'+
+    extra+successBox();
+}
+function areaFix(m){
+  const lock=S.phase==='running'||S.phase==='success';
+  const cards=S.plan.map((c,i)=>{
+    let cl='';
+    if(S.fix.found&&i===m.fix.index)cl=S.phase==='success'?'':'sel';
+    return cardHTML(c,i,cl,'button',lock?'':'pickcard').replace('<button','<button'+(lock?' disabled':''));
+  }).join('');
+  let alts='';
+  if(S.fix.found&&S.phase!=='success'){
+    const fc=m.fix.plan[m.fix.index];
+    alts='<div class="alts"><div class="alt-title">❌ Hatalı komut: '+CMD[fc].s+'. Yerine hangisi gelmeli?</div><div class="cmds" style="grid-template-columns:repeat('+m.fix.options.length+',1fr)">'+
+      m.fix.options.map(o=>'<button class="cmd c-'+o+'" data-act="alt" data-c="'+o+'"'+(lock?' disabled':'')+'><span class="ci">'+CMD[o].i+'</span><span>'+CMD[o].s+'</span></button>').join('')+'</div></div>';
+  }
+  return '<div class="plan-box" style="margin-top:12px"><div class="plan-title"><span>🤖 Robot arkadaşının planı:</span><small>Hatalı komut kartına dokun</small></div><div class="cards">'+cards+'</div></div>'+
+    '<div class="plan-actions"><button class="btn" data-act="watch"'+(lock?' disabled':'')+'>▶ ROBOTUN YOLUNU İZLE</button></div>'+alts+successBox();
+}
+function renderArea(){
+  const m=M(),a=$('#area');
+  a.innerHTML=m.type==='choose'?areaChoose(m):(m.type==='fix'?areaFix(m):areaPlan(m));
+  const b=a.querySelector('.failbox,.success,.reasonbox');
+  if(b&&b.scrollIntoView)try{b.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){}
+}
+
+/* =====================================================================
+   İPUCU SİSTEMİ
+===================================================================== */
+function showHint(){
+  const m=M();if(S.phase==='success')return;
+  const h=m.hints[S.hintIdx%m.hints.length];S.hintIdx++;
+  robo('💡 '+h.t);
+  if(h.fx==='goal')flash(cellEl(m.P.goal.x,m.P.goal.y));
+  else if(h.fx==='robot')flash($('#robot'));
+  else if(h.fx==='obstacle'){
+    const mv=S.obs.filter(o=>o.mv);
+    (mv.length?mv:S.obs).forEach(o=>flash(cellEl(o.x,o.y)));
+  }
+}
+
+/* =====================================================================
+   OYUN AKIŞI
+===================================================================== */
+function resetGame(){ // oyunu sıfırlama
+  S.token++;S.running=false;S.mi=0;S.level=0;S.stars=0;S.done=[];S.badges=[];
+  S.plan=[];S.phase='edit';S.failInfo=null;S.selRoute=null;S.check=null;S.changed=false;
+  S.fix={sel:null,found:false,choice:null};S.hintIdx=0;S.fb='';S.successMsg='';
+  try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}
+  $('#modal').classList.add('hidden');
+}
+function startIntro(){
+  resetGame();showScreen('intro');
+  speak('Merhaba! Ben Robo. Enerjim azalıyor. Enerji istasyonuna ulaşmak için bana bir yol planlayabilir misin?');
+}
+function showEnd(){
+  showScreen('end');
+  $('#end-badges').innerHTML=S.badges.map(b=>'<span class="badge">'+b.emoji+' '+b.badge+'</span>').join('');
+  $('#end-stars').textContent='⭐ '+S.stars+' / '+MISSIONS.length+' yıldız';
+  speak('Tebrikler! Sen harika bir robot planlayıcısısın!');
+}
+function goHome(){resetGame();showScreen('menu');}
+function playAgain(){resetGame();loadMission(0);}
+
+/* ---------- olaylar ---------- */
+const ACT={
+  add:d=>addCommand(d.c),undo:deleteLast,clear:clearPlan,apply:applyPlan,
+  replan:()=>resetAttempt(false),inspect:inspectRoute,
+  pick:d=>pickRoute(Number(d.i)),check:checkRoute,reason:d=>answerReason(d.k),
+  pickcard:d=>pickCard(Number(d.i)),watch:watchFriend,alt:d=>fixCommand(d.c),
+  next:nextMission
+};
+function init(){
+  $('#menu-robot').innerHTML=ROBOT_SVG;$('#intro-robot').innerHTML=ROBOT_SVG;
+  $('#end-robot').innerHTML=ROBOT_SVG;$('#avatar').innerHTML=ROBOT_SVG;
+  $('#btn-start').addEventListener('click',startIntro);
+  $('#btn-go').addEventListener('click',()=>loadMission(0));
+  $('#btn-menu').addEventListener('click',goHome);
+  $('#btn-hint').addEventListener('click',showHint);
+  $('#btn-sound').addEventListener('click',toggleSound);
+  $('#btn-sound-menu').addEventListener('click',toggleSound);
+  $('#btn-again').addEventListener('click',playAgain);
+  $('#btn-home').addEventListener('click',goHome);
+  $('#area').addEventListener('click',function(e){
+    const b=e.target.closest('[data-act]');
+    if(!b||b.disabled)return;
+    const f=ACT[b.dataset.act];if(f)f(b.dataset);
+  });
+  updateSoundButtons();
+  const problems=selfTest();
+  if(problems.length)console.warn('Görev doğrulama uyarıları:',problems);
+}
+window.RobotGame={S,MISSIONS,simulate,selfTest,speed:S_SPEED,loadMission,ACT};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+</body>
+</html>
