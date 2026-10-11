@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Gölge Dedektifleri: Bütünü Tamamla</title>
+<style>
+:root{
+  --ink:#24305e;
+  --paper:#fff8e3;
+  --sky:#e8f1ff;
+  --teal:#13a89e;
+  --teal-d:#0c7f77;
+  --sun:#ffc933;
+  --sun-d:#e5a800;
+  --coral:#ff7a59;
+  --coral-d:#d9553a;
+  --lilac:#8f7cf0;
+  --good:#2fb36b;
+  --scene:300px;
+  --font:"Trebuchet MS","Segoe UI","Arial Rounded MT Bold","Nunito",system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--sky);font-family:var(--font);color:var(--ink);overscroll-behavior:none}
+body{touch-action:none;user-select:none;-webkit-user-select:none}
+button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:4px solid var(--lilac);outline-offset:3px}
+
+/* ---------- genel ekran düzeni ---------- */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top)) 14px max(12px,env(safe-area-inset-bottom));overflow:auto;touch-action:pan-y}
+.screen.active{display:flex}
+#screen-game{justify-content:flex-start;overflow:hidden;touch-action:none;padding:8px 10px max(8px,env(safe-area-inset-bottom))}
+.bg-dots{background:
+  radial-gradient(circle at 12% 18%,rgba(255,201,51,.28) 0 60px,transparent 61px),
+  radial-gradient(circle at 88% 82%,rgba(19,168,158,.2) 0 90px,transparent 91px),
+  var(--sky)}
+
+.btn{border:0;border-radius:26px;font-weight:800;letter-spacing:.2px;padding:16px 28px;font-size:clamp(18px,3.4vw,26px);box-shadow:0 7px 0 rgba(0,0,0,.18);transition:transform .08s,box-shadow .08s;min-height:64px}
+.btn:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.btn-main{background:var(--sun);color:var(--ink);box-shadow:0 8px 0 var(--sun-d)}
+.btn-main:active{box-shadow:0 3px 0 var(--sun-d)}
+.btn-teal{background:var(--teal);color:#fff;box-shadow:0 7px 0 var(--teal-d)}
+.btn-teal:active{box-shadow:0 2px 0 var(--teal-d)}
+.btn-soft{background:#fff;color:var(--ink);box-shadow:0 7px 0 #c9d3ee}
+
+/* ---------- ana menü ---------- */
+.menu-card{background:var(--paper);border:6px solid var(--ink);border-radius:36px;padding:clamp(18px,4vw,40px);max-width:760px;width:100%;text-align:center;box-shadow:0 12px 0 rgba(36,48,94,.25);position:relative}
+.menu-badge{width:clamp(96px,22vw,150px);height:auto;display:block;margin:-70px auto 6px;filter:drop-shadow(0 6px 0 rgba(36,48,94,.25))}
+.menu-card h1{margin:6px 0 0;font-size:clamp(32px,7.5vw,64px);line-height:1.02;letter-spacing:1px;color:var(--ink)}
+.menu-card h2{margin:6px 0 14px;font-size:clamp(20px,4.5vw,36px);color:var(--teal-d)}
+.menu-card p{margin:0 auto 22px;font-size:clamp(17px,3vw,24px);max-width:560px;line-height:1.35}
+.menu-levels{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px;font-size:clamp(14px,2.4vw,18px);font-weight:700}
+.menu-levels span{background:#fff;border-radius:999px;padding:7px 14px;border:3px solid var(--ink)}
+
+/* ---------- üst çubuk ---------- */
+.topbar{width:100%;max-width:980px;display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.iconbtn{width:52px;height:52px;border-radius:16px;border:3px solid var(--ink);background:#fff;font-size:26px;display:grid;place-items:center;padding:0;flex:0 0 auto;box-shadow:0 4px 0 rgba(36,48,94,.25)}
+.iconbtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(36,48,94,.25)}
+.levelpill{flex:1 1 auto;min-width:0;text-align:center;background:var(--paper);border:3px solid var(--ink);border-radius:18px;padding:5px 10px;font-weight:800;font-size:clamp(13px,2.6vw,20px);line-height:1.15}
+.levelpill small{display:block;font-size:.78em;color:var(--teal-d)}
+.starcount{background:var(--sun);border:3px solid var(--ink);border-radius:18px;padding:8px 12px;font-weight:900;font-size:clamp(16px,3vw,22px);flex:0 0 auto;white-space:nowrap}
+.progress{width:100%;max-width:980px;display:flex;align-items:center;gap:10px;margin:6px 0 4px;flex:0 0 auto;justify-content:center}
+.progress .dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;font-size:clamp(15px,3.2vw,22px)}
+.progress .txt{font-weight:800;font-size:clamp(13px,2.6vw,18px);white-space:nowrap}
+.dot{opacity:.45;filter:grayscale(1)}
+.dot.done{opacity:1;filter:none}
+.dot.now{opacity:1;filter:none;transform:scale(1.25)}
+
+/* ---------- soru balonu ---------- */
+.speech{width:100%;max-width:980px;background:#fff;border:4px solid var(--ink);border-radius:22px;padding:8px 14px;display:flex;align-items:center;gap:10px;flex:0 0 auto;box-shadow:0 5px 0 rgba(36,48,94,.2);min-height:60px}
+.speech .msg{flex:1;font-size:clamp(17px,3.4vw,28px);font-weight:800;line-height:1.15;text-align:center}
+.speech .msg.hintmsg{color:var(--coral-d)}
+.speech .msg.softmsg{color:var(--teal-d)}
+.speech .msg.goodmsg{color:var(--good)}
+
+/* ---------- sahne ---------- */
+.stage{width:100%;max-width:980px;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;gap:6px;position:relative}
+.scene-row{display:flex;gap:clamp(8px,3vw,36px);justify-content:center;align-items:flex-start;width:100%}
+.card{background:var(--paper);border:5px solid var(--ink);border-radius:26px;padding:8px;display:flex;flex-direction:column;align-items:center;box-shadow:0 7px 0 rgba(36,48,94,.22);position:relative}
+.card .cap{font-weight:900;font-size:clamp(14px,2.6vw,20px);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.card.shadowcard{background:#dfe6ff}
+.card svg.scene{width:var(--scene);height:var(--scene);display:block;touch-action:none;overflow:visible}
+.card.glow{animation:glow .9s ease-out}
+@keyframes glow{0%{box-shadow:0 0 0 0 rgba(255,201,51,.9)}100%{box-shadow:0 0 0 38px rgba(255,201,51,0)}}
+.inspect-ring{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.hole{animation:holepulse 1.4s ease-in-out infinite}
+@keyframes holepulse{0%,100%{opacity:.95}50%{opacity:.55}}
+
+/* parça tepsisi */
+.tray{display:flex;gap:clamp(5px,2.2vw,24px);justify-content:center;align-items:stretch;width:100%}
+.slot{background:var(--paper);border:4px dashed var(--ink);border-radius:20px;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;flex:0 1 auto;position:relative}
+.slot .lab{font-weight:900;font-size:clamp(12px,2.4vw,17px);margin-bottom:2px}
+.slot .cell{display:grid;place-items:center;position:relative}
+.piece{position:relative;cursor:grab;touch-action:none;z-index:2;filter:drop-shadow(0 5px 0 rgba(36,48,94,.25));transition:transform .28s cubic-bezier(.3,1.4,.5,1)}
+.piece.dragging{transition:none;cursor:grabbing;z-index:50;filter:drop-shadow(0 12px 6px rgba(36,48,94,.3))}
+.piece.back{transition:transform .35s cubic-bezier(.3,1.3,.5,1)}
+.piece.shake{animation:shake .4s}
+.piece.used{opacity:.25;pointer-events:none}
+@keyframes shake{0%,100%{rotate:0deg}25%{rotate:-7deg}75%{rotate:7deg}}
+.piece svg{display:block;overflow:visible;pointer-events:none}
+.slot.pickable{cursor:pointer}
+.slot.pickable:active{transform:scale(.97)}
+.slot.chosen{border-style:solid;border-color:var(--teal);background:#e6fbf7}
+.slot.wrongshake{animation:shake .4s}
+.slot.chosen.good{border-color:var(--good);background:#e5ffe9}
+
+/* seçenek butonları (doğru/yanlış, kanıt) */
+.choices{display:flex;gap:clamp(10px,3vw,30px);justify-content:center;width:100%;flex-wrap:wrap}
+.bigchoice{flex:1 1 200px;max-width:340px;min-height:84px;border-radius:28px;border:5px solid var(--ink);font-weight:900;font-size:clamp(22px,4.6vw,38px);display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 0 rgba(36,48,94,.3)}
+.bigchoice:active{transform:translateY(5px);box-shadow:0 3px 0 rgba(36,48,94,.3)}
+.bigchoice.yes{background:#c9f5d6}
+.bigchoice.no{background:#ffd9d0}
+.bigchoice.picked-good{background:var(--good);color:#fff}
+.bigchoice.picked-soft{animation:shake .4s}
+
+.evidence{display:flex;gap:clamp(8px,2.4vw,22px);justify-content:center;width:100%}
+.ev{flex:1 1 0;max-width:290px;background:#fff;border:5px solid var(--ink);border-radius:26px;padding:8px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 7px 0 rgba(36,48,94,.28);min-height:clamp(150px,30vh,230px);justify-content:center}
+.ev:active{transform:translateY(4px);box-shadow:0 3px 0 rgba(36,48,94,.28)}
+.ev .letter{width:clamp(34px,6vw,46px);height:clamp(34px,6vw,46px);border-radius:50%;background:var(--lilac);color:#fff;display:grid;place-items:center;font-weight:900;font-size:clamp(18px,3.4vw,26px)}
+.ev svg{width:clamp(70px,16vw,120px);height:clamp(70px,16vw,120px)}
+.ev .t{font-weight:900;font-size:clamp(15px,3vw,24px);text-align:center;line-height:1.1}
+.ev.picked-good{background:#c9f5d6;border-color:var(--good)}
+.ev.picked-soft{animation:shake .4s;background:#fff2d6}
+
+/* alt çubuk */
+.bottombar{width:100%;max-width:980px;display:flex;justify-content:center;gap:12px;flex:0 0 auto;padding-top:4px}
+.hintbtn{background:#e3e7f5;color:#8c94b5;box-shadow:0 5px 0 #c4cbe3;min-height:56px;padding:10px 22px;font-size:clamp(16px,3vw,22px)}
+.hintbtn.ready{background:var(--coral);color:#fff;box-shadow:0 5px 0 var(--coral-d);animation:pulse 1.2s ease-in-out infinite}
+.hintbtn:disabled{cursor:default}
+.nextbtn{display:none}
+
+/* efektler */
+.sparkles{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden}
+.spark{position:absolute;font-size:28px;animation:fly 1s ease-out forwards}
+@keyframes fly{0%{transform:translate(0,0) scale(.3);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1.3) rotate(160deg);opacity:0}}
+
+/* ödül / son ekranlar */
+.reward{background:var(--paper);border:6px solid var(--ink);border-radius:36px;padding:clamp(18px,4vw,36px);max-width:680px;width:100%;text-align:center;box-shadow:0 12px 0 rgba(36,48,94,.25)}
+.reward .big{font-size:clamp(56px,min(18vw,15vh),130px);line-height:1;animation:pop .7s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.2) rotate(-20deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.reward h2{margin:8px 0;font-size:clamp(26px,6vw,46px)}
+.reward p{font-size:clamp(17px,3.2vw,26px);margin:8px 0 20px;line-height:1.3}
+.reward .row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.reward .stars{font-size:clamp(22px,min(5vw,5vh),40px);margin:4px 0;line-height:1.2}
+
+@media (prefers-reduced-motion:reduce){
+  .hole,.inspect-ring,.hintbtn.ready,.card.glow{animation:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ ANA MENÜ ============ -->
+<section id="screen-menu" class="screen bg-dots active">
+  <div class="menu-card">
+    <svg class="menu-badge" viewBox="0 0 120 120" aria-hidden="true">
+      <circle cx="60" cy="60" r="54" fill="#ffc933" stroke="#24305e" stroke-width="6"/>
+      <circle cx="52" cy="52" r="24" fill="#e8f1ff" stroke="#24305e" stroke-width="7"/>
+      <path d="M70 70 L96 96" stroke="#24305e" stroke-width="12" stroke-linecap="round"/>
+      <path d="M40 58 Q52 40 66 50" stroke="#13a89e" stroke-width="5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <h1>🕵️ GÖLGE DEDEKTİFLERİ</h1>
+    <h2>BÜTÜNÜ TAMAMLA</h2>
+    <p>Kayıp parçaları bul, gölgeleri incele ve dedektiflik kanıtını göster!</p>
+    <button id="btn-start" class="btn btn-main">🔎 DEDEKTİF GÖREVİNE BAŞLA</button>
+    <div class="menu-levels" aria-hidden="true">
+      <span>🟢 Kolay</span><span>🟡 Orta</span><span>🟠 Zor</span><span>🔴 Dedektif</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ OYUN ============ -->
+<section id="screen-game" class="screen bg-dots">
+  <div class="topbar">
+    <button class="iconbtn" id="btn-home" aria-label="Ana menü">🏠</button>
+    <div class="levelpill" id="levelpill"></div>
+    <button class="iconbtn" id="btn-voice" aria-label="Sesi aç veya kapat">🔊</button>
+    <div class="starcount" id="starcount">⭐ 0</div>
+  </div>
+  <div class="progress"><div class="dots" id="dots"></div><div class="txt" id="progtxt"></div></div>
+  <div class="speech">
+    <button class="iconbtn" id="btn-repeat" aria-label="Yönergeyi tekrar dinle" style="width:46px;height:46px;font-size:22px">🔈</button>
+    <div class="msg" id="msg"></div>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="bottombar">
+    <button class="btn hintbtn" id="btn-hint" disabled>💡 İPUCU</button>
+  </div>
+</section>
+
+<!-- ============ DÜZEY BİTTİ ============ -->
+<section id="screen-level" class="screen bg-dots">
+  <div class="reward">
+    <div class="big">🏅</div>
+    <h2>GÖLGE DEDEKTİFİ ROZETİ</h2>
+    <div class="stars" id="level-stars"></div>
+    <p id="level-text"></p>
+    <div class="row"><button class="btn btn-main" id="btn-nextlevel">▶ SONRAKİ DÜZEY</button></div>
+  </div>
+</section>
+
+<!-- ============ OYUN SONU ============ -->
+<section id="screen-end" class="screen bg-dots">
+  <div class="reward">
+    <div class="big">🏆</div>
+    <h2>USTA GÖLGE DEDEKTİFİ</h2>
+    <h2 style="color:var(--teal-d)">🎉 TEBRİKLER, GÖLGE DEDEKTİFİ!</h2>
+    <div class="stars" id="end-stars"></div>
+    <p>Kayıp parçaları buldun, gölgeleri karşılaştırdın ve kararlarının kanıtını gösterdin!</p>
+    <div class="row">
+      <button class="btn btn-main" id="btn-replay">🔄 TEKRAR OYNA</button>
+      <button class="btn btn-teal" id="btn-menu">🏠 ANA MENÜ</button>
+    </div>
+  </div>
+</section>
+
+<div class="sparkles" id="sparkles" aria-hidden="true"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   GÖLGE DEDEKTİFLERİ: BÜTÜNÜ TAMAMLA
+   ---------------------------------------------------------------------
+   1) ÇİZİM KÜTÜPHANESİ (OBJECTS): her nesne 200x200'lük bir alanda,
+      parçalardan oluşur. Parça = { id, d (SVG path), c (renk), x (ekstra süs) }
+   2) GÖREV VERİ TABANI (TASKS): yeni görev eklemek için diziye yeni bir
+      nesne eklemek yeterlidir (aşağıdaki açıklamalara bak).
+   3) OYUN MOTORU: durum yönetimi, sürükle-bırak, değerlendirme, kanıt, ipucu
+   ===================================================================== */
+
+/* ---------- küçük yol (path) yardımcıları ---------- */
+const E=(cx,cy,rx,ry)=>`M${cx-rx},${cy}a${rx},${ry} 0 1,0 ${2*rx},0a${rx},${ry} 0 1,0 ${-2*rx},0Z`;
+const R=(x,y,w,h,r)=>`M${x+r},${y}h${w-2*r}a${r},${r} 0 0 1 ${r},${r}v${h-2*r}a${r},${r} 0 0 1 ${-r},${r}h${-(w-2*r)}a${r},${r} 0 0 1 ${-r},${-r}v${-(h-2*r)}a${r},${r} 0 0 1 ${r},${-r}Z`;
+const P=(...p)=>"M"+p.map(q=>q.join(",")).join("L")+"Z";
+const EYE=(cx,cy,r=6)=>({d:E(cx,cy,r,r),c:"#fff"});
+const PUPIL=(cx,cy,r=3)=>({d:E(cx,cy,r,r),c:"#24305e"});
+
+/* ---------- NESNE ÇİZİMLERİ ---------- */
+const OBJECTS={
+  kelebek:{name:"Kelebek",parts:[
+    {id:"kanatUL",name:"sol üst kanat",c:"#ff7aa8",d:"M96,98 C70,40 25,35 22,70 C20,95 55,105 96,106Z",x:[{d:E(52,72,10,10),c:"#fff"}]},
+    {id:"kanatUR",name:"sağ üst kanat",c:"#ff7aa8",d:"M104,98 C130,40 175,35 178,70 C180,95 145,105 104,106Z",x:[{d:E(148,72,10,10),c:"#fff"}]},
+    {id:"kanatLL",name:"sol alt kanat",c:"#ffb347",d:"M96,108 C60,108 35,125 45,155 C55,180 90,160 97,125Z",x:[{d:E(65,142,7,7),c:"#fff"}]},
+    {id:"kanatLR",name:"sağ alt kanat",c:"#ffb347",d:"M104,108 C140,108 165,125 155,155 C145,180 110,160 103,125Z",x:[{d:E(135,142,7,7),c:"#fff"}]},
+    {id:"govde",name:"gövde",c:"#6b4430",d:R(93,66,14,88,7)},
+    {id:"anten",name:"anten",c:"#6b4430",d:"M97,70 Q86,48 76,44 L79,39 Q94,46 101,68Z M103,70 Q114,48 124,44 L121,39 Q106,46 99,68Z"}
+  ]},
+  balik:{name:"Balık",parts:[
+    {id:"kuyruk",name:"kuyruk",c:"#ff9f43",d:"M52,100 L8,62 Q22,100 8,138Z"},
+    {id:"ustYuzgec",name:"üst yüzgeç",c:"#ff9f43",d:"M78,70 Q92,32 128,66Z"},
+    {id:"altYuzgec",name:"alt yüzgeç",c:"#ff9f43",d:"M82,130 Q98,168 124,132Z"},
+    {id:"govde",name:"gövde",c:"#29b6f6",d:"M45,100 C60,60 130,55 175,100 C130,148 60,142 45,100Z",x:[EYE(142,92,8),PUPIL(144,92,4),{d:"M96,86 Q106,100 96,114",c:"none"}]}
+  ]},
+  araba:{name:"Araba",parts:[
+    {id:"kabin",name:"kabin",c:"#e8433f",d:"M48,104 L68,60 L122,60 L160,104Z",x:[{d:"M72,98 L84,68 L116,68 L116,98Z",c:"#cfeaff"},{d:"M124,98 L124,68 L128,68 L150,98Z",c:"#cfeaff"}]},
+    {id:"govde",name:"gövde",c:"#c92f2b",d:R(14,100,172,46,14),x:[{d:E(178,118,5,5),c:"#ffe27a"}]},
+    {id:"teker1",name:"arka teker",c:"#3a3f5c",d:E(56,148,21,21),x:[{d:E(56,148,8,8),c:"#c9d3ee"}]},
+    {id:"teker2",name:"ön teker",c:"#3a3f5c",d:E(144,148,21,21),x:[{d:E(144,148,8,8),c:"#c9d3ee"}]}
+  ]},
+  ev:{name:"Ev",parts:[
+    {id:"govde",name:"duvar",c:"#ffd38a",d:R(38,98,124,78,4),x:[{d:R(50,112,28,26,3),c:"#cfeaff"}]},
+    {id:"baca",name:"baca",c:"#8b5e3c",d:"M122,72 L122,46 L148,46 L148,92Z"},
+    {id:"cati",name:"çatı",c:"#e8433f",d:"M16,104 L78,42 L184,104Z"},
+    {id:"kapi",name:"kapı",c:"#8b5e3c",d:R(100,126,30,50,4),x:[{d:E(124,152,3,3),c:"#ffe27a"}]}
+  ]},
+  agac:{name:"Ağaç",parts:[
+    {id:"govde",name:"gövde",c:"#8b5e3c",d:"M88,176 L92,112 L108,112 L112,176Z"},
+    {id:"dal",name:"dal",c:"#8b5e3c",d:"M100,150 L134,114 L142,120 L106,160Z"},
+    {id:"yaprakSol",name:"sol yaprak kümesi",c:"#3cb371",d:"M40,100 C20,70 52,46 82,60 C96,76 96,110 76,124 C58,132 46,114 40,100Z"},
+    {id:"yaprakSag",name:"sağ yaprak kümesi",c:"#2fa05f",d:"M160,96 C176,66 142,44 116,58 C102,76 106,110 124,122 C142,130 154,112 160,96Z"},
+    {id:"yaprakUst",name:"üst yaprak kümesi",c:"#46c37b",d:"M64,66 C60,26 126,16 140,52 C148,76 120,90 100,86 C80,90 66,82 64,66Z"}
+  ]},
+  cicek:{name:"Çiçek",parts:[
+    {id:"sap",name:"sap",c:"#2fa05f",d:"M96,100 L104,100 L106,184 L98,184Z"},
+    {id:"yaprak",name:"yaprak",c:"#3cb371",d:"M104,150 C130,120 160,128 168,142 C150,166 120,168 104,158Z"},
+    {id:"petalSol",name:"sol taç yaprak",c:"#ff7aa8",d:"M92,90 C60,100 24,80 34,52 C60,34 92,56 96,86Z"},
+    {id:"petalSag",name:"sağ taç yaprak",c:"#ff7aa8",d:"M108,90 C140,100 176,80 166,52 C140,34 108,56 104,86Z"},
+    {id:"petalUst",name:"üst taç yaprak",c:"#ff93b9",d:"M84,70 C60,30 90,8 100,10 C110,8 140,30 116,70Z"},
+    {id:"merkez",name:"orta",c:"#ffc933",d:E(100,74,18,18)}
+  ]},
+  uçurtma:{name:"Uçurtma",parts:[
+    {id:"ustSol",name:"sol üst bölüm",c:"#ff7a59",d:"M100,14 L48,76 L100,96Z"},
+    {id:"ustSag",name:"sağ üst bölüm",c:"#ffc933",d:"M100,14 L152,76 L100,96Z"},
+    {id:"altSol",name:"sol alt bölüm",c:"#13a89e",d:"M48,76 L100,96 L100,152Z"},
+    {id:"altSag",name:"sağ alt bölüm",c:"#8f7cf0",d:"M152,76 L100,96 L100,152Z"},
+    {id:"ip",name:"ip",c:"#24305e",d:"M98,152 C70,170 130,172 96,194 L100,196 C136,172 78,168 102,152Z"},
+    {id:"kurdele",name:"kurdele",c:"#ff7a59",d:"M96,176 L74,168 L78,184Z M110,184 L132,178 L128,194Z"}
+  ]},
+  kedi:{name:"Kedi",parts:[
+    {id:"kuyruk",name:"kuyruk",c:"#f2a65a",d:"M46,152 C14,150 6,110 22,90 C30,84 36,92 30,104 C26,120 36,134 54,136Z"},
+    {id:"govde",name:"gövde",c:"#f2a65a",d:"M44,120 C44,92 100,86 130,104 C150,118 146,166 126,172 L58,172 C46,168 44,140 44,120Z"},
+    {id:"kafa",name:"kafa",c:"#f7b772",d:"M116,70 C116,48 168,46 176,72 C182,98 164,114 146,114 C126,112 116,92 116,70Z",x:[EYE(142,80,6),PUPIL(144,80,3),EYE(164,80,6),PUPIL(166,80,3),{d:"M150,94 L156,94 L153,99Z",c:"#ff7a8a"}]},
+    {id:"kulakSol",name:"sol kulak",c:"#f7b772",d:"M118,60 L124,26 L146,50Z"},
+    {id:"kulakSag",name:"sağ kulak",c:"#f7b772",d:"M148,50 L172,28 L176,64Z"},
+    {id:"on",name:"ön ayak",c:"#f2a65a",d:R(112,150,22,34,8)},
+    {id:"arka",name:"arka ayak",c:"#f2a65a",d:R(56,150,22,34,8)}
+  ]},
+  kus:{name:"Kuş",parts:[
+    {id:"kuyruk",name:"kuyruk",c:"#13a89e",d:"M52,108 L6,92 L14,112 L4,128 L16,134 L54,126Z"},
+    {id:"govde",name:"gövde",c:"#29b6f6",d:"M48,112 C48,74 118,60 148,92 C164,112 140,148 100,150 C66,152 48,134 48,112Z"},
+    {id:"kanat",name:"kanat",c:"#1e88c9",d:"M62,104 C70,70 106,62 124,70 C116,96 98,122 62,124Z"},
+    {id:"bas",name:"baş",c:"#29b6f6",d:E(150,76,26,26),x:[EYE(158,72,6),PUPIL(160,72,3)]},
+    {id:"gaga",name:"gaga",c:"#ffc933",d:"M172,70 L198,80 L172,90Z"},
+    {id:"bacak",name:"bacak",c:"#ff9f43",d:"M96,148 L100,148 L102,176 L116,180 L116,184 L96,184Z M120,146 L124,146 L126,176 L140,180 L140,184 L120,184Z"}
+  ]},
+  roket:{name:"Roket",parts:[
+    {id:"govde",name:"gövde",c:"#e9eefc",d:"M100,12 C140,44 140,120 132,150 L68,150 C60,120 60,44 100,12Z",x:[{d:E(100,76,17,17),c:"#7cc4ff"},{d:E(100,76,10,10),c:"#cfeaff"}]},
+    {id:"burun",name:"burun",c:"#ff7a59",d:"M100,12 C116,26 126,40 130,54 L70,54 C74,40 84,26 100,12Z"},
+    {id:"kanatSol",name:"sol kanat",c:"#e8433f",d:"M68,108 L28,162 L68,148Z"},
+    {id:"kanatSag",name:"sağ kanat",c:"#e8433f",d:"M132,108 L176,150 L132,148Z"},
+    {id:"alev",name:"alev",c:"#ffc933",d:"M80,152 L120,152 C124,176 108,190 100,198 C92,190 76,176 80,152Z"}
+  ]},
+  gemi:{name:"Gemi",parts:[
+    {id:"yelken",name:"büyük yelken",c:"#fff",d:"M96,22 L96,112 L38,112Z",x:[]},
+    {id:"yelken2",name:"küçük yelken",c:"#ffd38a",d:"M106,40 L106,112 L160,112Z"},
+    {id:"direk",name:"direk",c:"#6b4430",d:R(98,18,6,100,2)},
+    {id:"govde",name:"tekne",c:"#e8433f",d:"M20,118 L180,118 C170,150 150,166 120,166 L70,166 C42,164 26,140 20,118Z",x:[{d:E(60,138,7,7),c:"#cfeaff"},{d:E(90,140,7,7),c:"#cfeaff"}]},
+    {id:"bayrak",name:"bayrak",c:"#ffc933",d:"M104,18 L132,26 L104,34Z"}
+  ]},
+  robot:{name:"Robot",parts:[
+    {id:"anten",name:"anten",c:"#ff7a59",d:"M98,16 L102,16 L102,34 L98,34Z M92,6 L108,6 L108,18 L92,18Z"},
+    {id:"kafa",name:"kafa",c:"#9fb4e8",d:R(60,34,80,56,14),x:[{d:E(82,62,10,10),c:"#fff"},{d:E(118,62,10,10),c:"#fff"},PUPIL(84,62,4),PUPIL(120,62,4),{d:R(86,78,28,6,3),c:"#24305e"}]},
+    {id:"govde",name:"gövde",c:"#6c84d6",d:R(54,96,92,64,10),x:[{d:E(100,128,14,14),c:"#ffc933"}]},
+    {id:"kolSol",name:"sol kol",c:"#9fb4e8",d:"M54,104 L28,128 L22,176 L42,176 L46,140 L60,126Z"},
+    {id:"kolSag",name:"sağ kol",c:"#9fb4e8",d:"M146,104 L172,90 L184,60 L168,56 L160,78 L140,92Z"},
+    {id:"bacakSol",name:"sol bacak",c:"#4a63b8",d:R(64,160,26,34,6)},
+    {id:"bacakSag",name:"sağ bacak",c:"#4a63b8",d:R(110,160,26,34,6)}
+  ]}
+};
+/* uçurtma anahtarı Türkçe karakter içeriyor; kolay kullanım için takma ad */
+OBJECTS.ucurtma=OBJECTS["uçurtma"];
+
+/* ---------- KANIT TÜRLERİ ---------- */
+const EVIDENCE={
+  outline:{text:"Dış hattı aynı.",icon:"outline"},
+  direction:{text:"Yönü aynı.",icon:"direction"},
+  fit:{text:"Bütündeki boşluğa uyuyor.",icon:"fit"},
+  shape:{text:"Parçanın biçimi aynı.",icon:"shape"},
+  dirDiff:{text:"Yönü farklı.",icon:"dirdiff"}
+};
+
+/* =====================================================================
+   GÖREV VERİ TABANI
+   ---------------------------------------------------------------------
+   id               : görev numarası
+   level            : 1-4
+   type             : "missing" (parça sürükle), "check" (doğru/yanlış),
+                      "evidencePart" (parça + kanıt),
+                      "evidenceShadow" (gölge seç + kanıt),
+                      "detective" (incele + parça + kontrol + kanıt)
+   objectName       : ekranda görünen ad (sesli/yazılı)
+   objectImage      : OBJECTS içindeki anahtar (renkli nesne)
+   shadowImage      : { object, mirror, omit, swap } -> gölge tanımı
+                      mirror: true  -> gölge ters yöne bakar
+                      omit: "id"    -> o parça gölgede eksiktir (boşluk)
+                      swap: { id:"yeni path" } -> o parçanın şekli değişir
+   missingPart      : eksik parçanın id'si
+   partOptions      : [{kind:"correct"|"mirror"|"flipV"|"rotate"|"stretch"|"other", ...}]
+                      stretch: sx, sy (1'e yakınsa zor) | rotate: deg | other: part (id)
+   correctPart      : partOptions içindeki doğru seçeneğin sırası (0'dan başlar)
+   direction        : nesnenin baktığı yön ("sağ","sol","yukarı"...) (bilgi amaçlı)
+   question         : ekranda görünen/sesli okunan soru
+   evidenceOptions  : [kanıt anahtarları] (3 adet)
+   correctEvidence  : doğru kanıt anahtarı
+   isCorrectMatching: (check/detective) eşleştirme doğru mu?
+   hint             : ipucu metinleri dizisi (cevabı doğrudan söylemez)
+   ===================================================================== */
+const TASKS=[
+  /* ---------------- DÜZEY 1 : NESİ EKSİK? ---------------- */
+  {id:1,level:1,type:"missing",objectName:"Kelebek",objectImage:"kelebek",
+   shadowImage:{object:"kelebek",omit:"kanatUR"},missingPart:"kanatUR",
+   partOptions:[{kind:"stretch",sx:.55,sy:1.15},{kind:"correct"},{kind:"mirror"}],correctPart:1,direction:"sağ",
+   question:"Kayıp parçayı bul!",
+   hint:["Parçanın biçimine dikkat et.","Boşluğun şekline bak."]},
+  {id:2,level:1,type:"missing",objectName:"Balık",objectImage:"balik",
+   shadowImage:{object:"balik",omit:"kuyruk"},missingPart:"kuyruk",
+   partOptions:[{kind:"mirror"},{kind:"stretch",sx:.6,sy:.7},{kind:"correct"}],correctPart:2,direction:"sağ",
+   question:"Kayıp parçayı bul!",
+   hint:["Balığın kuyruğu hangi yöne bakıyor?","Parçanın yönünü incele."]},
+  {id:3,level:1,type:"missing",objectName:"Ev",objectImage:"ev",
+   shadowImage:{object:"ev",omit:"cati"},missingPart:"cati",
+   partOptions:[{kind:"correct"},{kind:"mirror"},{kind:"stretch",sx:.7,sy:1.5}],correctPart:0,direction:"sağ",
+   question:"Kayıp parçayı bul!",
+   hint:["Çatının en yüksek yeri nerede?","Sağ ve sol tarafı karşılaştır."]},
+
+  /* ---------------- DÜZEY 2 : DEDEKTİF KONTROLÜ ---------------- */
+  {id:4,level:2,type:"check",objectName:"Kedi",objectImage:"kedi",
+   shadowImage:{object:"kedi",mirror:true},isCorrectMatching:false,direction:"sağ",
+   question:"Dedektif, eşleştirme doğru mu?",
+   hint:["Kedinin yüzü hangi tarafa bakıyor?","Sağ ve sol tarafı karşılaştır."]},
+  {id:5,level:2,type:"check",objectName:"Balık",objectImage:"balik",
+   shadowImage:{object:"balik"},isCorrectMatching:true,direction:"sağ",
+   question:"Dedektif, eşleştirme doğru mu?",
+   hint:["Dış hatlara dikkat et.","Yüzgeçleri ve kuyruğu karşılaştır."]},
+  {id:6,level:2,type:"check",objectName:"Araba",objectImage:"araba",
+   shadowImage:{object:"araba",swap:{kabin:"M48,104 L84,60 L138,60 L160,104Z"}},isCorrectMatching:false,direction:"sağ",
+   question:"Dedektif, eşleştirme doğru mu?",
+   hint:["Arabanın üst kısmının biçimine bak.","Dış hatlara dikkat et."]},
+  {id:7,level:2,type:"check",objectName:"Kuş",objectImage:"kus",
+   shadowImage:{object:"kus"},isCorrectMatching:true,direction:"sağ",
+   question:"Dedektif, eşleştirme doğru mu?",
+   hint:["Kuşun gagası hangi yöne bakıyor?","Dış hatlara ve yöne bak."]},
+
+  /* ---------------- DÜZEY 3 : KANITINI GÖSTER ---------------- */
+  {id:8,level:3,type:"evidencePart",objectName:"Roket",objectImage:"roket",
+   shadowImage:{object:"roket",omit:"kanatSag"},missingPart:"kanatSag",
+   partOptions:[{kind:"correct"},{kind:"mirror"},{kind:"flipV"}],correctPart:0,direction:"yukarı",
+   question:"Neden bu parçayı seçtin?",
+   evidenceOptions:["outline","direction","fit"],correctEvidence:"direction",
+   hint:["Kanadın hangi yöne uzandığına bak.","Sağ ve sol tarafı karşılaştır."]},
+  {id:9,level:3,type:"evidenceShadow",objectName:"Gemi",objectImage:"gemi",
+   shadowOptions:[{object:"gemi",mirror:true},{object:"gemi",swap:{govde:"M20,118 L180,118 L160,166 L40,166Z"}},{object:"gemi"}],correctShadow:2,
+   question:"Neden bu gölgeyi seçtin?",
+   evidenceOptions:["fit","shape","direction"],correctEvidence:"shape",direction:"sağ",
+   hint:["Geminin teknesinin biçimine bak.","Dış hatlara dikkat et."]},
+  {id:10,level:3,type:"evidencePart",objectName:"Ağaç",objectImage:"agac",
+   shadowImage:{object:"agac",omit:"yaprakSol"},missingPart:"yaprakSol",
+   partOptions:[{kind:"other",part:"yaprakSag"},{kind:"correct"},{kind:"rotate",deg:90}],correctPart:1,direction:"sol",
+   question:"Neden bu parçayı seçtin?",
+   evidenceOptions:["fit","outline","direction"],correctEvidence:"fit",
+   hint:["Boşluğun şekline bak.","Parçanın bütündeki yerine dikkat et."]},
+
+  /* ---------------- DÜZEY 4 : DEDEKTİF ---------------- */
+  {id:11,level:4,type:"detective",objectName:"Robot",objectImage:"robot",
+   shadowImage:{object:"robot",omit:"kolSag"},missingPart:"kolSag",
+   partOptions:[{kind:"correct"},{kind:"stretch",sx:.85,sy:1.12},{kind:"mirror"},{kind:"rotate",deg:180}],correctPart:0,direction:"sağ",
+   question:"Dedektif, eşleştirme doğru mu?",isCorrectMatching:true,
+   evidenceOptions:["outline","fit","direction"],correctEvidence:"fit",
+   hint:["Kolun yönünü incele.","Parçanın bütündeki yerine dikkat et."]},
+  {id:12,level:4,type:"detective",objectName:"Kedi",objectImage:"kedi",
+   shadowImage:{object:"kedi",omit:"kuyruk",mirror:true},missingPart:"kuyruk",
+   partOptions:[{kind:"stretch",sx:.8,sy:1.1},{kind:"mirror"},{kind:"correct"},{kind:"rotate",deg:25}],correctPart:2,direction:"sağ",
+   question:"Dedektif, eşleştirme doğru mu?",isCorrectMatching:false,
+   evidenceOptions:["dirDiff","shape","fit"],correctEvidence:"dirDiff",
+   hint:["Kuyruğu tamamladıktan sonra kedinin yüzüne bak.","Sağ ve sol tarafı karşılaştır."]},
+  {id:13,level:4,type:"detective",objectName:"Kuş",objectImage:"kus",
+   shadowImage:{object:"kus",omit:"kanat"},missingPart:"kanat",
+   partOptions:[{kind:"mirror"},{kind:"stretch",sx:.9,sy:1.1},{kind:"correct"},{kind:"flipV"}],correctPart:2,direction:"sağ",
+   question:"Dedektif, eşleştirme doğru mu?",isCorrectMatching:true,
+   evidenceOptions:["shape","outline","direction"],correctEvidence:"shape",
+   hint:["Kanadın eğimini incele.","Dış hatlara dikkat et."]}
+];
+
+const LEVELS={
+  1:{icon:"🟢",name:"DÜZEY 1 – KOLAY",sub:"Nesi eksik?",intro:"Dikkatlice incele. Gölgenin nesi eksik?"},
+  2:{icon:"🟡",name:"DÜZEY 2 – ORTA",sub:"Dedektif kontrolü",intro:"Şimdi kontrol zamanı! Dedektif, sence bu eşleştirme doğru mu?"},
+  3:{icon:"🟠",name:"DÜZEY 3 – ZOR",sub:"Kanıtını göster",intro:"Bu kez kararının kanıtını göstereceksin!"},
+  4:{icon:"🔴",name:"DÜZEY 4 – DEDEKTİF",sub:"Gerçek dedektif görevi",intro:"Son düzey! Önce incele, sonra parçayı bul, sonra kontrol et."}
+};
+
+/* =====================================================================
+   OYUN DURUMU
+   ===================================================================== */
+const state={
+  currentLevel:1,
+  currentQuestion:0,   // TASKS dizisindeki sıra
+  score:0,
+  stars:0,
+  selectedPart:null,
+  completedQuestions:0,
+  hintUsed:0,
+  // görev içi
+  attempts:0,
+  phase:"",
+  locked:false,
+  hintReadyTimer:null,
+  hintIndex:0,
+  voiceOn:true
+};
+function resetTaskState(){
+  state.selectedPart=null;
+  state.attempts=0;
+  state.phase="";
+  state.locked=false;
+  state.hintIndex=0;
+  clearTimeout(state.hintReadyTimer);
+  setHintReady(false);
+}
+function resetAllProgress(){
+  state.currentLevel=1;state.currentQuestion=0;state.score=0;state.stars=0;
+  state.completedQuestions=0;state.hintUsed=0;
+  resetTaskState();
+}
+
+/* =====================================================================
+   YARDIMCILAR
+   ===================================================================== */
+const $=s=>document.querySelector(s);
+const SVGNS="http://www.w3.org/2000/svg";
+const stage=$("#stage"),msgEl=$("#msg");
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let currentSpeech="";
+
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $("#"+id).classList.add("active");
+  if(id!=="screen-game"){stopSpeech()}
+}
+
+/* ---------- SES ---------- */
+let audioCtx=null;
+function tone(freqs,dur=.14,type="sine",vol=.12){
+  if(!state.voiceOn)return;
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    let t=audioCtx.currentTime;
+    freqs.forEach((f,i)=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type=type;o.frequency.value=f;o.connect(g);g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0,t+i*dur);g.gain.linearRampToValueAtTime(vol,t+i*dur+.02);
+      g.gain.exponentialRampToValueAtTime(.0001,t+i*dur+dur+.12);
+      o.start(t+i*dur);o.stop(t+i*dur+dur+.15);
+    });
+  }catch(e){}
+}
+const sfx={
+  good:()=>tone([660,880,1100],.1),
+  soft:()=>tone([330,294],.12,"triangle",.09),
+  snap:()=>tone([520,780],.07,"sine",.12),
+  star:()=>tone([880,1175,1568],.09),
+  pick:()=>tone([500],.06,"sine",.07)
+};
+let trVoice=null;
+function pickVoice(){
+  if(!("speechSynthesis" in window))return;
+  const vs=speechSynthesis.getVoices();
+  trVoice=vs.find(v=>/^tr/i.test(v.lang)&&/female|kadın|yelda|filiz|seda/i.test(v.name))||vs.find(v=>/^tr/i.test(v.lang))||null;
+}
+if("speechSynthesis" in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+function stopSpeech(){try{if("speechSynthesis" in window)speechSynthesis.cancel()}catch(e){}}
+function speak(text){
+  currentSpeech=text;
+  if(!state.voiceOn||!("speechSynthesis" in window))return;
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="tr-TR";if(trVoice)u.voice=trVoice;
+    u.rate=.92;u.pitch=1.2;u.volume=1;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+/* ekranda göster + sesli oku */
+function say(text,cls="",voice=true){
+  msgEl.textContent=text;
+  msgEl.className="msg "+cls;
+  if(voice)speak(text);
+}
+
+/* ---------- efektler ---------- */
+function sparkle(x,y,emojis=["⭐","✨","🌟"],n=10){
+  const box=$("#sparkles");
+  for(let i=0;i<n;i++){
+    const s=document.createElement("div");s.className="spark";
+    s.textContent=emojis[i%emojis.length];
+    const a=Math.random()*Math.PI*2,r=60+Math.random()*90;
+    s.style.left=x+"px";s.style.top=y+"px";
+    s.style.setProperty("--dx",Math.cos(a)*r+"px");s.style.setProperty("--dy",Math.sin(a)*r+"px");
+    box.appendChild(s);setTimeout(()=>s.remove(),1000);
+  }
+}
+function sparkleEl(el,n){const r=el.getBoundingClientRect();sparkle(r.left+r.width/2,r.top+r.height/2,undefined,n)}
+
+/* ---------- SVG oluşturma ---------- */
+function partsOf(key){return OBJECTS[key].parts}
+function getPart(key,id){return partsOf(key).find(p=>p.id===id)}
+function pathEl(d,fill,extra={}){
+  const p=document.createElementNS(SVGNS,"path");
+  p.setAttribute("d",d);p.setAttribute("fill",fill);
+  for(const k in extra)p.setAttribute(k,extra[k]);
+  return p;
+}
+function colorPartGroup(part,deco=true){
+  const g=document.createElementNS(SVGNS,"g");
+  g.appendChild(pathEl(part.d,part.c,{stroke:"rgba(36,48,94,.55)","stroke-width":2.5,"stroke-linejoin":"round"}));
+  if(deco&&part.x)part.x.forEach(x=>{ if(x.c!=="none")g.appendChild(pathEl(x.d,x.c)) });
+  return g;
+}
+function mirrorTf(){return "translate(200,0) scale(-1,1)"}
+
+/* tam renkli nesne */
+function buildObjectSVG(key){
+  const svg=document.createElementNS(SVGNS,"svg");
+  svg.setAttribute("viewBox","0 0 200 200");svg.classList.add("scene");
+  partsOf(key).forEach(p=>svg.appendChild(colorPartGroup(p)));
+  return svg;
+}
+/* gölge: tek renk, belirgin dış hat; omit -> boşluk; swap -> şekil değişir */
+const SHADOW_COLOR="#2c3a73";
+function buildShadowSVG(def){
+  const svg=document.createElementNS(SVGNS,"svg");
+  svg.setAttribute("viewBox","0 0 200 200");svg.classList.add("scene");
+  const g=document.createElementNS(SVGNS,"g");
+  if(def.mirror)g.setAttribute("transform",mirrorTf());
+  let holeEl=null;
+  partsOf(def.object).forEach(p=>{
+    const d=(def.swap&&def.swap[p.id])?def.swap[p.id]:p.d;
+    if(def.omit===p.id){
+      holeEl=pathEl(d,"rgba(255,255,255,.9)",{stroke:"#ff7a59","stroke-width":4,"stroke-dasharray":"8 6","stroke-linejoin":"round",class:"hole"});
+      g.appendChild(holeEl);
+    }else{
+      g.appendChild(pathEl(d,SHADOW_COLOR,{stroke:SHADOW_COLOR,"stroke-width":3,"stroke-linejoin":"round"}));
+    }
+  });
+  svg.appendChild(g);
+  svg._hole=holeEl;svg._def=def;svg._g=g;
+  return svg;
+}
+/* boşluğu doldur (doğru parça yerleştiğinde gölge tamamlanır) */
+function fillHole(shadowSvg){
+  const h=shadowSvg._hole;if(!h)return;
+  h.removeAttribute("class");
+  h.setAttribute("fill",SHADOW_COLOR);h.setAttribute("stroke",SHADOW_COLOR);h.removeAttribute("stroke-dasharray");
+  h.setAttribute("stroke-width",3);
+}
+
+/* ---------- parça seçeneklerinin çizimi ---------- */
+/* Parça, gölgedeki boşlukla AYNI ölçekte ve koordinatta çizilir; bu sayede
+   doğru parça tam oturur. Ekran piksel ölçeği = sahne boyutu / 200. */
+function optionTransform(opt,cx,cy){
+  switch(opt.kind){
+    case "mirror": return `translate(${cx},0) scale(-1,1) translate(${-cx},0)`;
+    case "flipV":  return `translate(0,${cy}) scale(1,-1) translate(0,${-cy})`;
+    case "rotate": return `rotate(${opt.deg} ${cx} ${cy})`;
+    case "stretch":return `translate(${cx},${cy}) scale(${opt.sx},${opt.sy}) translate(${-cx},${-cy})`;
+    default: return "";
+  }
+}
+let measureSvg=null;
+function bboxOf(builderFn){
+  if(!measureSvg){
+    measureSvg=document.createElementNS(SVGNS,"svg");
+    measureSvg.setAttribute("width","0");measureSvg.setAttribute("height","0");
+    measureSvg.style.cssText="position:absolute;left:-9999px;top:-9999px;visibility:hidden";
+    document.body.appendChild(measureSvg);
+  }
+  const g=document.createElementNS(SVGNS,"g");
+  builderFn(g);measureSvg.appendChild(g);
+  const b=g.getBBox();measureSvg.removeChild(g);
+  return {x:b.x,y:b.y,w:b.width,h:b.height};
+}
+/* Bir parça seçeneği için { svg, w, h, cx, cy } üretir.
+   shadowDef.mirror varsa doğru parça da gölgenin yönüne göre çizilir. */
+function buildPieceSVG(task,opt,shadowDef){
+  let part=getPart(task.shadowImage.object,task.missingPart);
+  if(opt.kind==="other")part=getPart(task.shadowImage.object,opt.part);
+  const holePart=getPart(task.shadowImage.object,task.missingPart);
+  const hb0=bboxOf(g=>g.appendChild(pathEl(holePart.d,"#000")));
+  let cx=hb0.x+hb0.w/2,cy=hb0.y+hb0.h/2;
+  const tf=[];
+  if(shadowDef.mirror)tf.push(mirrorTf());              // gölge yönü
+  const baseTf=tf.join(" ");
+  // seçeneğe özel dönüşüm: boşluğun gölgedeki merkezine göre uygulanır
+  const holeBox=bboxOf(g=>{const q=pathEl(holePart.d,"#000");if(baseTf)q.setAttribute("transform",baseTf);g.appendChild(q)});
+  const hcx=holeBox.x+holeBox.w/2,hcy=holeBox.y+holeBox.h/2;
+  const pcxy=(opt.kind==="other")?(()=>{const b=bboxOf(g=>{const q=pathEl(part.d,"#000");if(baseTf)q.setAttribute("transform",baseTf);g.appendChild(q)});return [b.x+b.w/2,b.y+b.h/2]})():[hcx,hcy];
+  const ot=optionTransform(opt,pcxy[0],pcxy[1]);
+  const fullTf=(ot+" "+baseTf).trim();
+  const build=g=>{
+    const inner=colorPartGroup(part);
+    if(fullTf)inner.setAttribute("transform",fullTf);
+    g.appendChild(inner);
+  };
+  const box=bboxOf(build);
+  const pad=6;
+  const svg=document.createElementNS(SVGNS,"svg");
+  svg.setAttribute("viewBox",`${box.x-pad} ${box.y-pad} ${box.w+2*pad} ${box.h+2*pad}`);
+  const g=document.createElementNS(SVGNS,"g");build(g);svg.appendChild(g);
+  return {svg,w:box.w+2*pad,h:box.h+2*pad,
+          // parça merkezinin, boşluk merkezinden farkı (doğru yerleşim için gerekli)
+          cx:box.x+box.w/2,cy:box.y+box.h/2,hcx,hcy};
+}
+
+/* =====================================================================
+   ÖLÇEK
+   ===================================================================== */
+function computeScene(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const g=$("#screen-game");
+  const lvl=currentTask()?currentTask().type:"";
+  let s;
+  if(lvl==="evidenceShadow"){
+    s=Math.min(vw*.28,vh*.22,200);
+  }else if(lvl==="check"){
+    s=Math.min(vw*.42,vh*.36,330);
+  }else if(lvl==="evidencePart"||lvl==="detective"){
+    s=Math.min(vw*.36,vh*.27,260);
+  }else{
+    s=Math.min(vw*.4,vh*.3,300);
+  }
+  s=Math.max(120,Math.floor(s));
+  document.documentElement.style.setProperty("--scene",s+"px");
+  return s;
+}
+function currentTask(){return TASKS[state.currentQuestion]}
+function k(){return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--scene"))/200}
+
+/* =====================================================================
+   İPUCU SİSTEMİ
+   ===================================================================== */
+const hintBtn=$("#btn-hint");
+function setHintReady(on){
+  hintBtn.disabled=!on;
+  hintBtn.classList.toggle("ready",on);
+}
+function armHintTimer(){
+  clearTimeout(state.hintReadyTimer);
+  setHintReady(false);
+  state.hintReadyTimer=setTimeout(()=>setHintReady(true),11000);
+}
+function noteStruggle(){
+  state.attempts++;
+  if(state.attempts>=2)setHintReady(true);
+}
+const GENERIC_HINTS=["Dış hatlara dikkat et.","Parçanın yönünü incele.","Boşluğun şekline bak.","Sağ ve sol tarafı karşılaştır.","Parçanın bütündeki yerine dikkat et."];
+hintBtn.addEventListener("click",()=>{
+  if(hintBtn.disabled||state.locked)return;
+  const t=currentTask();
+  const list=(t.hint||[]).concat(GENERIC_HINTS);
+  const h=list[state.hintIndex%list.length];
+  state.hintIndex++;state.hintUsed++;
+  say("Bir ipucu: "+h,"hintmsg");
+  setHintReady(false);
+  armHintTimer();
+});
+
+/* =====================================================================
+   ÜST ÇUBUK / İLERLEME
+   ===================================================================== */
+function updateHud(){
+  const t=currentTask(),L=LEVELS[t.level];
+  $("#levelpill").innerHTML=`${L.icon} ${L.name}<small>${L.sub}</small>`;
+  $("#starcount").textContent="⭐ "+state.stars;
+  const dots=$("#dots");dots.innerHTML="";
+  TASKS.forEach((_,i)=>{
+    const s=document.createElement("span");
+    s.className="dot"+(i<state.completedQuestions?" done":"")+(i===state.currentQuestion?" now":"");
+    s.textContent=i<state.completedQuestions?"⭐":(i===state.currentQuestion?"🔎":"☆");
+    s.style.filter=i<state.completedQuestions||i===state.currentQuestion?"none":"";
+    dots.appendChild(s);
+  });
+  $("#progtxt").textContent=`Görev ${state.currentQuestion+1} / ${TASKS.length}`;
+}
+
+/* =====================================================================
+   GÖREV KURULUMU
+   ===================================================================== */
+function startTask(){
+  resetTaskState();
+  const t=currentTask();
+  state.currentLevel=t.level;
+  computeScene();
+  updateHud();
+  stage.innerHTML="";
+  if(t.type==="missing")buildMissing(t);
+  else if(t.type==="check")buildCheck(t);
+  else if(t.type==="evidencePart")buildMissing(t,{evidence:true});
+  else if(t.type==="evidenceShadow")buildEvidenceShadow(t);
+  else if(t.type==="detective")buildDetective(t);
+  armHintTimer();
+}
+
+function card(cap,svg,cls=""){
+  const c=document.createElement("div");c.className="card "+cls;
+  const h=document.createElement("div");h.className="cap";h.innerHTML=cap;
+  c.appendChild(h);c.appendChild(svg);return c;
+}
+
+/* ---------- Düzey 1 / 3-parça / 4 için: parça sürükleme sahnesi ---------- */
+function buildMissing(t,opts={}){
+  const row=document.createElement("div");row.className="scene-row";
+  const objSvg=buildObjectSVG(t.objectImage);
+  const shSvg=buildShadowSVG(t.shadowImage);
+  const objCard=card("🔎 NESNE",objSvg);
+  const shCard=card("🌑 GÖLGESİ",shSvg,"shadowcard");
+  row.appendChild(objCard);row.appendChild(shCard);
+  stage.appendChild(row);
+  const tray=document.createElement("div");tray.className="tray";
+  stage.appendChild(tray);
+  const pieces=[];
+  t.partOptions.forEach((opt,i)=>{
+    const b=buildPieceSVG(t,opt,t.shadowImage);
+    const slot=document.createElement("div");slot.className="slot";
+    const lab=document.createElement("div");lab.className="lab";lab.textContent=t.partOptions.length>3?"🧩 "+(i+1):"🧩 PARÇA "+(i+1);
+    const cell=document.createElement("div");cell.className="cell";
+    const piece=document.createElement("div");piece.className="piece";
+    piece.dataset.index=i;
+    piece.appendChild(b.svg);
+    cell.appendChild(piece);slot.appendChild(lab);slot.appendChild(cell);tray.appendChild(slot);
+    pieces.push({el:piece,slot,cell,b,opt,index:i});
+  });
+  const ctx={task:t,objSvg,shSvg,shCard,objCard,pieces,tray,opts,done:false};
+  layoutPieces(ctx);
+  window._ctx=ctx;
+  ctx.onResize=()=>layoutPieces(ctx);
+  pieces.forEach(p=>attachDrag(ctx,p));
+  say(t.question,"");
+  if(opts.evidence===undefined)speakIntro(t);
+}
+function speakIntro(t){
+  const L=LEVELS[t.level];
+  if(state.currentQuestion===0)speak("Merhaba küçük dedektif! Kayıp parçaları bulmaya hazır mısın? Dikkatlice incele. Gölgenin nesi eksik?");
+}
+
+function layoutPieces(ctx){
+  const kk=k();
+  let maxH=0;
+  ctx.pieces.forEach(p=>{
+    const w=p.b.w*kk,h=p.b.h*kk;
+    p.b.svg.setAttribute("width",w);p.b.svg.setAttribute("height",h);
+    p.el.style.width=w+"px";p.el.style.height=h+"px";
+    maxH=Math.max(maxH,h);
+  });
+  ctx.pieces.forEach(p=>{
+    p.cell.style.width=Math.max(p.b.w*kk,60)+"px";
+    p.cell.style.height=Math.max(maxH,60)+"px";
+  });
+}
+
+/* ---------- sürükle-bırak (Pointer Events) ---------- */
+function attachDrag(ctx,p){
+  const el=p.el;
+  let startX=0,startY=0,dx=0,dy=0,active=false,moved=false;
+  el.addEventListener("pointerdown",e=>{
+    if(ctx.done||state.locked)return;
+    e.preventDefault();
+    active=true;moved=false;
+    startX=e.clientX;startY=e.clientY;dx=dy=0;
+    el.setPointerCapture(e.pointerId);
+    el.classList.remove("back","shake");el.classList.add("dragging");
+    state.selectedPart=p.index;
+    sfx.pick();
+  });
+  el.addEventListener("pointermove",e=>{
+    if(!active)return;
+    dx=e.clientX-startX;dy=e.clientY-startY;
+    if(Math.abs(dx)+Math.abs(dy)>8)moved=true;
+    el.style.transform=`translate(${dx}px,${dy}px) scale(1.04)`;
+  });
+  const end=e=>{
+    if(!active)return;active=false;
+    try{el.releasePointerCapture(e.pointerId)}catch(_){}
+    el.classList.remove("dragging");
+    if(!moved){el.style.transform="";state.selectedPart=null;
+      say("Parçayı gölgedeki boşluğa sürükle.","softmsg");return}
+    dropPiece(ctx,p,dx,dy);
+  };
+  el.addEventListener("pointerup",end);
+  el.addEventListener("pointercancel",end);
+}
+
+function holeScreenCenter(ctx){
+  const r=ctx.shSvg.getBoundingClientRect();
+  const kk=r.width/200;
+  const h=ctx.pieces[0].b;           // boşluk merkezi tüm seçeneklerde aynı
+  return {x:r.left+h.hcx*kk,y:r.top+h.hcy*kk,kk};
+}
+function pieceScreenCenter(p){
+  const r=p.el.getBoundingClientRect();
+  return {x:r.left+r.width/2,y:r.top+r.height/2};
+}
+function dropPiece(ctx,p,dx,dy){
+  const el=p.el;
+  const hole=holeScreenCenter(ctx);
+  // parçanın (taşınmış hâldeki) merkezi
+  const base=pieceScreenCenterBase(p);
+  const cur={x:base.x+dx,y:base.y+dy};
+  const dist=Math.hypot(cur.x-hole.x,cur.y-hole.y);
+  const near=Math.max(70,ctx.shSvg.getBoundingClientRect().width*.32);
+  const isCorrect=p.index===ctx.task.correctPart;
+  if(dist<near){
+    if(isCorrect){
+      // hafif mıknatıs: boşluğun tam merkezine yumuşakça otur
+      const tx=hole.x-base.x,ty=hole.y-base.y;
+      el.classList.add("back");
+      // parça merkezi ile boşluk merkezi farkı (parça çizimi kutusu içinde)
+      const off=pieceCenterOffset(p,hole.kk);
+      el.style.transform=`translate(${tx-off.x}px,${ty-off.y}px) scale(1)`;
+      ctx.done=true;state.locked=true;
+      setTimeout(()=>onPartPlaced(ctx,p),330);
+    }else{
+      wrongPiece(ctx,p);
+    }
+  }else{
+    // boşluktan uzakta bırakıldı: sessizce geri dön
+    returnPiece(p);
+  }
+}
+/* parça kutusunun merkezi ile boşluk merkezi arasındaki fark */
+function pieceCenterOffset(p,kk){
+  return {x:(p.b.cx-p.b.hcx)*kk,y:(p.b.cy-p.b.hcy)*kk};
+}
+function pieceScreenCenterBase(p){
+  /* parça, kendi hücresinin tam ortasında durur; geçişten (transition) etkilenmesin diye hücreden ölçülür */
+  const r=p.cell.getBoundingClientRect();
+  return {x:r.left+r.width/2,y:r.top+r.height/2};
+}
+function returnPiece(p){
+  p.el.classList.add("back");
+  p.el.style.transform="";
+  state.selectedPart=null;
+}
+function wrongPiece(ctx,p){
+  sfx.soft();
+  returnPiece(p);
+  p.el.classList.add("shake");
+  setTimeout(()=>p.el.classList.remove("shake"),420);
+  const msgs=["Bir kez daha inceleyelim.","Parçanın biçimine ve yönüne dikkat et.","Daha dikkatli karşılaştırmayı dene.","Yönü tekrar kontrol et."];
+  say(msgs[state.attempts%msgs.length],"softmsg");
+  noteStruggle();
+}
+function onPartPlaced(ctx,p){
+  const t=ctx.task;
+  fillHole(ctx.shSvg);
+  p.el.style.opacity="0";           // parça gölgeye dönüştü (gölge tamamlandı)
+  ctx.shCard.classList.add("glow");
+  sfx.snap();setTimeout(sfx.good,120);
+  sparkleEl(ctx.shCard,12);
+  if(t.type==="missing"){
+    say("Harika! Kayıp parçayı buldun!","goodmsg");
+    ctx.pieces.forEach(q=>{if(q!==p)q.slot.style.opacity=".4"});
+    ctx.shSvg.parentNode.querySelector(".cap").innerHTML="✅ GÖLGE TAMAMLANDI";
+    setTimeout(()=>finishTask(),1700);
+  }else if(t.type==="evidencePart"){
+    say("Harika! Kayıp parçayı buldun!","goodmsg");
+    ctx.pieces.forEach(q=>{if(q!==p)q.slot.style.opacity=".4"});
+    setTimeout(()=>{state.locked=false;showEvidence(t,()=>{finishTask()},"Neden bu parçayı seçtin?")},1300);
+  }else if(t.type==="detective"){
+    setTimeout(()=>detectiveCheckStep(ctx),1300);
+  }
+}
+
+/* =====================================================================
+   DÜZEY 2 : DOĞRU / YANLIŞ
+   ===================================================================== */
+function buildCheck(t){
+  const row=document.createElement("div");row.className="scene-row";
+  row.appendChild(card("🔎 NESNE",buildObjectSVG(t.objectImage)));
+  row.appendChild(card("🌑 GÖLGESİ",buildShadowSVG(t.shadowImage),"shadowcard"));
+  stage.appendChild(row);
+  const ch=document.createElement("div");ch.className="choices";
+  ch.innerHTML=`<button class="bigchoice yes" data-v="1">✅ DOĞRU</button><button class="bigchoice no" data-v="0">❌ YANLIŞ</button>`;
+  stage.appendChild(ch);
+  say(t.question,"");
+  if(state.currentQuestion===3)speak("Dedektif, sence bu eşleştirme doğru mu?");
+  ch.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    if(state.locked)return;
+    const said=b.dataset.v==="1";
+    if(said===t.isCorrectMatching){
+      state.locked=true;
+      b.classList.add("picked-good");
+      sfx.good();sparkleEl(b,10);
+      say("Dedektif gözün çok dikkatli!","goodmsg");
+      setTimeout(finishTask,1700);
+    }else{
+      sfx.soft();b.classList.add("picked-soft");setTimeout(()=>b.classList.remove("picked-soft"),420);
+      say("Tekrar incele. Dış hatlara ve yöne bak.","softmsg");
+      noteStruggle();
+    }
+  }));
+}
+
+/* =====================================================================
+   DÜZEY 3 : GÖLGE SEÇ + KANIT
+   ===================================================================== */
+function buildEvidenceShadow(t){
+  const objSvg=buildObjectSVG(t.objectImage);
+  const top=document.createElement("div");top.className="scene-row";
+  top.appendChild(card("🔎 NESNE",objSvg));
+  stage.appendChild(top);
+  const lab=document.createElement("div");lab.className="cap";lab.style.cssText="font-weight:900;font-size:clamp(14px,2.8vw,20px)";
+  lab.textContent="🌑 Hangi gölge bu nesneye ait?";
+  stage.appendChild(lab);
+  const tray=document.createElement("div");tray.className="tray";
+  stage.appendChild(tray);
+  t.shadowOptions.forEach((def,i)=>{
+    const slot=document.createElement("button");slot.className="slot pickable";slot.style.borderStyle="solid";
+    slot.style.background="#dfe6ff";slot.type="button";
+    const l=document.createElement("div");l.className="lab";l.textContent="🌑 GÖLGE "+(i+1);
+    const sv=buildShadowSVG(def);sv.style.width="var(--scene)";sv.style.height="var(--scene)";
+    slot.appendChild(l);slot.appendChild(sv);tray.appendChild(slot);
+    slot.addEventListener("click",()=>{
+      if(state.locked)return;
+      if(i===t.correctShadow){
+        state.locked=true;slot.classList.add("chosen","good");
+        sfx.good();sparkleEl(slot,10);
+        say("Harika! Doğru gölgeyi buldun!","goodmsg");
+        setTimeout(()=>{state.locked=false;showEvidence(t,finishTask,"Neden bu gölgeyi seçtin?")},1300);
+      }else{
+        sfx.soft();slot.classList.add("wrongshake");setTimeout(()=>slot.classList.remove("wrongshake"),420);
+        say("Bir kez daha inceleyelim. Parçanın biçimine ve yönüne dikkat et.","softmsg");
+        noteStruggle();
+      }
+    });
+  });
+  say("Dikkatlice incele. Hangi gölge bu nesneye ait?","");
+}
+
+/* =====================================================================
+   KANIT SİSTEMİ  (Düzey 3 ve Düzey 4)
+   ===================================================================== */
+function evidenceIcon(kind){
+  const ink="#24305e",tl="#13a89e",sn="#ffc933",co="#ff7a59";
+  switch(kind){
+    case "outline": return `<svg viewBox="0 0 120 120"><path d="M30,80 C20,40 60,20 90,40 C110,60 100,95 70,98 C50,100 36,96 30,80Z" fill="#dfe6ff" stroke="${tl}" stroke-width="7" stroke-dasharray="2 10" stroke-linecap="round"/><path d="M30,80 C20,40 60,20 90,40 C110,60 100,95 70,98 C50,100 36,96 30,80Z" fill="${ink}" opacity=".85" transform="translate(0,0) scale(.82) translate(11,11)"/></svg>`;
+    case "direction": return `<svg viewBox="0 0 120 120"><path d="M14 42 H78 V28 L108 48 L78 68 V54 H14Z" fill="${tl}" stroke="${ink}" stroke-width="4" stroke-linejoin="round"/><path d="M14 92 H78 V78 L108 98 L78 118 V104 H14Z" fill="${ink}" stroke="${ink}" stroke-width="4" stroke-linejoin="round" transform="translate(0,-6)"/></svg>`;
+    case "dirdiff": return `<svg viewBox="0 0 120 120"><path d="M14 42 H78 V28 L108 48 L78 68 V54 H14Z" fill="${tl}" stroke="${ink}" stroke-width="4" stroke-linejoin="round"/><path d="M106 92 H42 V78 L12 98 L42 118 V104 H106Z" fill="${co}" stroke="${ink}" stroke-width="4" stroke-linejoin="round" transform="translate(0,-6)"/></svg>`;
+    case "fit": return `<svg viewBox="0 0 120 120"><path d="M14,40 H46 V30 a12,12 0 1,1 24,0 V40 H102 V100 H14Z" fill="#dfe6ff" stroke="${ink}" stroke-width="5" stroke-linejoin="round"/><path d="M50,78 H70 V68 a9,9 0 1,1 18,0 V78 H108 V108 H50Z" fill="${sn}" stroke="${ink}" stroke-width="5" stroke-linejoin="round" transform="translate(-10,-6)"/></svg>`;
+    case "shape": return `<svg viewBox="0 0 120 120"><path d="M10,40 L40,14 L68,40 L40,66Z" fill="${tl}" stroke="${ink}" stroke-width="5" stroke-linejoin="round"/><path d="M52,100 L82,74 L110,100 L82,126Z" fill="${tl}" stroke="${ink}" stroke-width="5" stroke-linejoin="round" transform="translate(-4,-14)"/><text x="60" y="66" text-anchor="middle" font-size="30" font-weight="900" fill="${ink}">=</text></svg>`;
+  }
+  return "";
+}
+function showEvidence(t,onDone,question){
+  stage.innerHTML="";
+  const q=document.createElement("div");q.className="cap";
+  q.style.cssText="font-weight:900;font-size:clamp(18px,3.8vw,30px);text-align:center";
+  q.textContent="🕵️ "+question;
+  stage.appendChild(q);
+  const wrap=document.createElement("div");wrap.className="evidence";
+  stage.appendChild(wrap);
+  const letters=["A","B","C"];
+  t.evidenceOptions.forEach((key,i)=>{
+    const ev=EVIDENCE[key];
+    const b=document.createElement("button");b.className="ev";b.type="button";
+    b.innerHTML=`<div class="letter">${letters[i]}</div>${evidenceIcon(ev.icon)}<div class="t">${ev.text}</div>`;
+    wrap.appendChild(b);
+    b.addEventListener("click",()=>{
+      if(state.locked)return;
+      if(key===t.correctEvidence){
+        state.locked=true;b.classList.add("picked-good");
+        sfx.good();sparkleEl(b,12);
+        say(["Evet! Kararını doğru bir ipucuyla destekledin.","Kanıtını buldun!"][t.id%2],"goodmsg");
+        setTimeout(onDone,1800);
+      }else{
+        sfx.soft();b.classList.add("picked-soft");setTimeout(()=>b.classList.remove("picked-soft"),420);
+        say("Bir kez daha düşün. Parçaya bakarken hangi özelliği fark ettin?","softmsg");
+        noteStruggle();
+      }
+    });
+  });
+  say(question,"");
+  speak(question+" Peki neden böyle düşündün?");
+}
+
+/* =====================================================================
+   DÜZEY 4 : DEDEKTİF  (incele → parça → kontrol → kanıt)
+   ===================================================================== */
+function buildDetective(t){
+  // 1-2. adım: nesneyi ve gölgeyi incele
+  const row=document.createElement("div");row.className="scene-row";
+  const objSvg=buildObjectSVG(t.objectImage);
+  const shSvg=buildShadowSVG(t.shadowImage);
+  const objCard=card("🔎 NESNE",objSvg,"inspect-ring");
+  const shCard=card("🌑 GÖLGESİ",shSvg,"shadowcard");
+  row.appendChild(objCard);row.appendChild(shCard);
+  stage.appendChild(row);
+  const info=document.createElement("div");
+  info.className="choices";
+  info.innerHTML=`<button class="btn btn-teal" id="btn-inspected">🔎 İNCELEDİM!</button>`;
+  stage.appendChild(info);
+  say("Önce nesneyi ve gölgeyi dikkatlice incele.","");
+  state.phase="inspect";
+  $("#btn-inspected").addEventListener("click",()=>{
+    if(state.phase!=="inspect")return;
+    state.phase="part";
+    // 3-5. adım: kayıp parçayı bul ve sürükle
+    stage.innerHTML="";
+    const savedHintIndex=state.hintIndex;
+    buildMissing(t,{evidence:false});
+    state.hintIndex=savedHintIndex;
+    say("Gölgenin nesi eksik? Kayıp parçayı bul ve sürükle!","");
+    armHintTimer();
+  });
+}
+/* 6. adım: eşleştirmenin doğruluğunu kontrol et */
+function detectiveCheckStep(ctx){
+  const t=ctx.task;
+  state.locked=false;state.phase="check";
+  stage.innerHTML="";
+  const row=document.createElement("div");row.className="scene-row";
+  row.appendChild(card("🔎 NESNE",buildObjectSVG(t.objectImage)));
+  const full=Object.assign({},t.shadowImage);delete full.omit;
+  row.appendChild(card("🌑 TAMAMLANAN GÖLGE",buildShadowSVG(full),"shadowcard"));
+  stage.appendChild(row);
+  const ch=document.createElement("div");ch.className="choices";
+  ch.innerHTML=`<button class="bigchoice yes" data-v="1">✅ DOĞRU</button><button class="bigchoice no" data-v="0">❌ YANLIŞ</button>`;
+  stage.appendChild(ch);
+  say("Parçayı yerleştirdin! Dedektif, sence bu eşleştirme doğru mu?","");
+  armHintTimer();
+  ch.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    if(state.locked)return;
+    const said=b.dataset.v==="1";
+    if(said===t.isCorrectMatching){
+      state.locked=true;b.classList.add("picked-good");sfx.good();sparkleEl(b,10);
+      say("Dedektif gözün çok dikkatli!","goodmsg");
+      // 7. adım: kanıt
+      setTimeout(()=>{state.locked=false;state.phase="evidence";
+        showEvidence(t,finishTask,
+          t.isCorrectMatching?"Neden doğru olduğunu düşünüyorsun?":"Neden yanlış olduğunu düşünüyorsun?");},1500);
+    }else{
+      sfx.soft();b.classList.add("picked-soft");setTimeout(()=>b.classList.remove("picked-soft"),420);
+      say("Tekrar incele. Dış hatlara ve yöne bak.","softmsg");
+      noteStruggle();
+    }
+  }));
+}
+
+/* =====================================================================
+   GÖREV BİTTİ / DÜZEY GEÇİŞİ / OYUN SONU
+   ===================================================================== */
+function finishTask(){
+  const t=currentTask();
+  clearTimeout(state.hintReadyTimer);setHintReady(false);
+  state.stars++;state.score+=10;state.completedQuestions++;
+  $("#starcount").textContent="⭐ "+state.stars;
+  sfx.star();
+  const sc=$("#starcount");sparkleEl(sc,8);
+  updateHud();
+  const nextIdx=state.currentQuestion+1;
+  if(nextIdx>=TASKS.length){showEnd();return}
+  const nextTask=TASKS[nextIdx];
+  if(nextTask.level!==t.level){showLevelDone(t.level);return}
+  state.currentQuestion=nextIdx;
+  startTask();
+}
+function showLevelDone(level){
+  const L=LEVELS[level];
+  const inLevel=TASKS.filter(x=>x.level===level).length;
+  $("#level-stars").textContent="⭐".repeat(inLevel);
+  const nx=LEVELS[level+1];
+  $("#level-text").textContent=`${L.name} tamamlandı! Şimdi sıradaki düzeye geçelim: ${nx.name}.`;
+  showScreen("screen-level");
+  sfx.star();
+  speak("Harika! Dedektif rozetini kazandın! Sıradaki düzeye geçelim.");
+  sparkle(window.innerWidth/2,window.innerHeight/3,["🏅","⭐","✨"],14);
+}
+function showEnd(){
+  $("#end-stars").textContent="⭐".repeat(Math.min(state.stars,TASKS.length));
+  showScreen("screen-end");
+  sfx.star();setTimeout(sfx.good,300);
+  speak("Harika! Sen gerçek bir gölge dedektifisin!");
+  sparkle(window.innerWidth/2,window.innerHeight/3,["🏆","⭐","🎉","✨"],20);
+}
+
+/* =====================================================================
+   OLAY BAĞLAMALARI
+   ===================================================================== */
+$("#btn-start").addEventListener("click",()=>{
+  resetAllProgress();
+  showScreen("screen-game");
+  state.currentQuestion=0;
+  startTask();
+  // başlangıç sesi (ilk görev konuşması)
+  speak("Merhaba küçük dedektif! Kayıp parçaları bulmaya hazır mısın? Dikkatlice incele. Gölgenin nesi eksik?");
+});
+$("#btn-nextlevel").addEventListener("click",()=>{
+  state.currentQuestion=state.currentQuestion+1;
+  showScreen("screen-game");
+  startTask();
+  speak(LEVELS[currentTask().level].intro);
+});
+$("#btn-replay").addEventListener("click",()=>{
+  resetAllProgress();
+  showScreen("screen-game");
+  startTask();
+  speak("Merhaba küçük dedektif! Kayıp parçaları bulmaya hazır mısın?");
+});
+$("#btn-menu").addEventListener("click",()=>{resetAllProgress();showScreen("screen-menu")});
+$("#btn-home").addEventListener("click",()=>{resetAllProgress();showScreen("screen-menu")});
+$("#btn-voice").addEventListener("click",()=>{
+  state.voiceOn=!state.voiceOn;
+  $("#btn-voice").textContent=state.voiceOn?"🔊":"🔇";
+  if(!state.voiceOn)stopSpeech();else speak(msgEl.textContent);
+});
+$("#btn-repeat").addEventListener("click",()=>{
+  const was=state.voiceOn;state.voiceOn=true;speak(msgEl.textContent);state.voiceOn=was;
+});
+window.addEventListener("resize",()=>{
+  if(!$("#screen-game").classList.contains("active"))return;
+  computeScene();
+  if(window._ctx&&stage.contains(window._ctx.tray))layoutPieces(window._ctx);
+});
+/* sayfa kaydırma / yakınlaştırma sürüklemeyi bozmasın */
+document.addEventListener("touchmove",e=>{
+  if($("#screen-game").classList.contains("active"))e.preventDefault();
+},{passive:false});
+document.addEventListener("gesturestart",e=>e.preventDefault());
+document.addEventListener("contextmenu",e=>e.preventDefault());
+</script>
+</body>
+</html>
