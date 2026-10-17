@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Örüntü Dedektifleri</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#2b3a2f;background:linear-gradient(#cdeffd,#e3f7c9 65%,#a8d98a);font-size:clamp(16px,2.3vw,22px)}
+#app{max-width:920px;margin:0 auto;padding:12px 14px 40px;text-align:center}
+h1{font-size:clamp(28px,6vw,52px);margin:8px 0;color:#2d6a4f}h2{margin:6px 0;color:#2d6a4f}
+.btn{font:inherit;font-weight:700;border:0;border-radius:999px;padding:.6em 1.4em;margin:5px;background:#ff9f1c;color:#fff;box-shadow:0 5px 0 #c97800;cursor:pointer;min-height:50px}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #c97800}.btn:disabled{opacity:.45}
+.btn.g{background:#2d9c5a;box-shadow:0 5px 0 #1c6e3d}.btn.b{background:#3a86ff;box-shadow:0 5px 0 #1f5cc0}.btn.s{background:#8d99ae;box-shadow:0 5px 0 #5c677d;font-size:.8em;min-height:42px}
+.btn:focus-visible,.c:focus-visible,.o:focus-visible{outline:4px solid #3a86ff;outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.prog{background:#fffa;border-radius:999px;padding:6px 16px;font-weight:700}
+.say{background:#fff;border:3px solid #3a86ff;border-radius:20px;padding:10px 14px;max-width:580px;margin:6px auto;font-weight:600}
+.row{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:14px 0;padding:10px;background:#fffbe8;border:5px solid #ffd166;border-radius:26px}
+.c,.slot{width:min(14vw,80px);height:min(14vw,80px);background:#fff;border:3px solid #cbd5e1;border-radius:18px;padding:3px;display:flex;align-items:center;justify-content:center;font:inherit}
+.c{cursor:default}button.c{cursor:pointer}.c.u{border-color:#2d9c5a;box-shadow:0 0 0 3px #b7e4c7}.c.bad{border-color:#e76f51;background:#ffe8e0}
+.slot{border:3px dashed #ff9f1c;background:#fff4d9;font-size:2em;font-weight:800;color:#ff9f1c}
+svg.tk{width:100%;height:100%;display:block}
+.opts{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:10px 0}
+.o{background:#fff;border:4px solid #8ecae6;border-radius:24px;padding:6px;width:min(26vw,120px);height:min(26vw,120px);cursor:grab;touch-action:none;user-select:none}
+.o.off{opacity:.35}.o svg{pointer-events:none}
+.drag{position:fixed;z-index:9;pointer-events:none;opacity:.9;transform:translate(-50%,-50%) scale(1.15)}
+.shake{animation:sk .4s}@keyframes sk{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.pop{animation:pp .7s ease 2}@keyframes pp{50%{transform:scale(1.08)}}
+.clap{transform-box:view-box;transform-origin:50px 56px;animation:cl .5s infinite alternate}@keyframes cl{to{transform:scaleX(.82)}}
+.jump{animation:jp .7s infinite alternate}@keyframes jp{to{transform:translateY(-8px)}}
+.wave{transform-box:view-box;transform-origin:50px 44px;animation:wv .5s infinite alternate}@keyframes wv{to{transform:rotate(-14deg)}}
+.spin{transform-box:view-box;transform-origin:50px 50px;animation:sp 1s infinite alternate}@keyframes sp{to{transform:scaleX(-1)}}
+.w{display:inline-block;background:#fff;border-radius:22px;padding:12px;width:190px;margin:6px;border:4px solid #95d5b2;vertical-align:top}
+.bd{display:inline-block;background:#fff;border:3px solid #ffd166;border-radius:14px;padding:6px 10px;margin:3px;font-size:.8em}.bd.lk{opacity:.35;filter:grayscale(1)}
+table{margin:8px auto;border-collapse:collapse;background:#fff;border-radius:12px;text-align:left}td{padding:7px 14px;border-bottom:1px solid #ddd}.note{font-size:.8em;max-width:620px;margin:8px auto}
+</style></head><body><div id="app"></div>
+<script>
+/* ===== ÇİZİM YARDIMCILARI ===== */
+const E=(x,y,a,b,f)=>`<ellipse cx="${x}" cy="${y}" rx="${a}" ry="${b}" fill="${f}"/>`,C=(x,y,r,f)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${f}"/>`,
+R=(x,y,w,h,f)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="${f}"/>`,P=(p,f)=>`<polygon points="${p}" fill="${f}"/>`,
+L=(d,w,s)=>`<path d="${d}" stroke="${s}" stroke-width="${w}" stroke-linecap="round" fill="none"/>`,K='#333';
+const col=(n,c)=>[n,C(50,50,34,c)+C(38,38,8,'#fff6')];
+const fig=(arms,legs)=>C(50,24,11,'#ffd8b5')+L('M50 36V66',6,'#6c7ae0')+L(legs,5,'#33415c')+L(arms,5,'#6c7ae0');
+const LG='M50 66L42 88M50 66L58 88';
+/* ===== PARÇA SEMBOLLERİ: dünya numarası + harf = anahtar (örn. '1r') ===== */
+const TOK={
+1:{r:col('kırmızı','#e63946'),b:col('mavi','#3a86ff'),y:col('sarı','#ffc300'),g:col('yeşil','#2d9c5a'),o:col('turuncu','#fb8500'),p:col('mor','#9b5de5')},
+2:{c:['daire',C(50,50,32,'#3a86ff')],t:['üçgen',P('50,16 86,82 14,82','#ffc300')],k:['kare',R(18,18,64,64,'#e63946')],B:['büyük daire',C(50,50,40,'#2ec4b6')],s:['küçük daire',C(50,50,16,'#2ec4b6')],d:['dikdörtgen',R(8,30,84,40,'#9b5de5')],z:['yıldız',P('50,10 61,38 92,38 67,57 77,88 50,69 23,88 33,57 8,38 39,38','#fb8500')]},
+3:{k:['kedi',C(50,58,26,'#f4a261')+P('26,42 30,14 46,34','#f4a261')+P('54,34 70,14 74,42','#f4a261')+C(41,56,3,K)+C(59,56,3,K)+L('M44 66Q50 72 56 66',2,K)],
+v:['tavşan',E(50,68,22,20,'#c9b8a8')+E(40,28,6,20,'#c9b8a8')+E(60,28,6,20,'#c9b8a8')+C(43,66,3,K)+C(57,66,3,K)],
+u:['kuş',E(46,56,28,20,'#4cc9f0')+C(72,40,12,'#4cc9f0')+P('82,38 96,44 82,48','#ffb703')+E(40,56,14,9,'#2a9df4')+C(75,38,2.5,K)],
+f:['balık',E(44,50,30,20,'#48cae4')+P('70,50 94,30 94,70','#48cae4')+P('38,32 48,16 56,32','#0096c7')+C(28,45,3,K)],
+l:['kaplumbağa',`<path d="M16 64A34 34 0 0 1 84 64Z" fill="#6a994e"/>`+C(88,60,8,'#a7c957')+R(26,64,10,14,'#a7c957')+R(60,64,10,14,'#a7c957')]},
+4:{a:['alkış',`<g class="clap">${fig('M50 44L44 56M50 44L56 56',LG)+C(50,58,5,'#ffd8b5')}</g>`],z:['zıpla',`<g class="jump">${fig('M50 44L32 26M50 44L68 26','M50 66L38 82M50 66L62 82')}</g>`],
+d:['dön',`<g class="spin">${fig('M50 44L28 50M50 44L72 50',LG)}</g>`+L('M14 40A40 40 0 0 1 60 12',3,'#fb8500')+P('60,4 72,14 56,20','#fb8500')],e:['el salla',`<g class="wave">${fig('M50 44L68 24M50 44L36 58',LG)}</g>`]}};
+const tk=k=>`<svg viewBox="0 0 100 100" class="tk" role="img" aria-label="${TOK[k[0]][k[1]][0]}">${TOK[k[0]][k[1]][1]}</svg>`,nm=k=>TOK[k[0]][k[1]][0];
+/* ===== GÖREVLER =====
+ w=dünya, u=tekrar eden birim, n=gösterilen parça sayısı. Sıradaki parça = u[n % u.length]
+ e=[hatalı yer, hatalı harf] varsa hata bulma görevi (dizi n parça, hatalı parça yer değiştirmiş) */
+const DEF=[
+[['rb',4],['yg',4],['ryb',5],['rrb',5],['gyy',5],['rbgy',6],['rb',6,[3,'y']],['gyo',6,[4,'p']]],
+[['ct',4],['kct',5],['Bs',4],['ttk',5],['dkt',5],['zzc',5],['ct',6,[2,'k']],['Bs',6,[5,'B']]],
+[['kv',4],['ufl',5],['vvk',5],['fu',4],['lkk',5],['fvu',5],['kv',6,[4,'u']],['ufl',7,[5,'k']]],
+[['az',4],['ead',5],['aaz',5],['zzd',5],['dez',5],['eazd',6],['az',6,[3,'d']],['ead',7,[4,'z']]]];
+const TS=DEF.map((ws,wi)=>ws.map(([u,n,er],j)=>{const w=wi+1,U=[...u].map(c=>w+c),Ln=U.length,seq=Array.from({length:n},(_,i)=>U[i%Ln]);let ans=U[n%Ln],e;
+if(er){e=er[0];ans=U[e%Ln];seq[e]=w+er[1]}
+const al=Object.keys(TOK[w]).map(c=>w+c).filter(k=>k!==ans),pref=[...new Set(U)].filter(k=>k!==ans&&k!==(er?seq[e]:''));
+const d=er?[seq[e],...al.filter(k=>k!==seq[e])].slice(0,2):[...pref,...al.filter(k=>!pref.includes(k))].slice(0,2);
+return{id:`${w}.${j+1}`,w,U,L:Ln,seq,ans,e,d}}));
+const WD=['Renk Dedektifleri','Şekil Dedektifleri','Hayvan Dedektifleri','Hareket Dedektifleri'];
+const HINTS=['Hangi parçalar tekrar ediyor?','İlk iki parçaya dikkatlice bak.','Dizide hangi bölüm yeniden başlıyor?'];
+const GOOD=['Harika! Kuralı buldun!','Tekrar eden parçaları fark ettin.','Örüntünü başarıyla tamamladın!'],MIS=['Bir kez daha inceleyelim.','Hangi parçalar tekrar ediyor?','Kuralı yeniden düşünmeyi deneyebilirsin.'];
+const BADGES=[['Örüntü Çırağı','5 görev',s=>s.t>=5],['Hata Avcısı','3 hata düzeltti',s=>s.er>=3],['Kural Mucidi','Kendi örüntüsünü açıkladı',s=>s.ex>=1],['Büyük Dedektif','Tüm bölümler bitti',s=>[1,2,3,4].every(w=>wd(s,w))]];
+const wd=(s,w)=>TS[w-1].every(t=>s.dn[t.id]);
+const DET=`<svg viewBox="0 0 80 90" aria-hidden="true"><rect x="20" y="70" width="40" height="18" rx="8" fill="#8d5a34"/><circle cx="40" cy="50" r="22" fill="#ffd8b5"/><ellipse cx="40" cy="36" rx="30" ry="6" fill="#6b4226"/><path d="M20 36Q40 6 60 36Z" fill="#8d5a34"/><circle cx="32" cy="52" r="2.6" fill="#333"/><circle cx="48" cy="52" r="2.6" fill="#333"/><path d="M32 62Q40 69 48 62" stroke="#c0392b" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="66" cy="68" r="9" fill="#fff8" stroke="#555" stroke-width="3"/><path d="M72 75L79 86" stroke="#555" stroke-width="4" stroke-linecap="round"/></svg>`;
+/* ===== DURUM / SES ===== */
+const KEY='oruntuDedektifleri_v1',fresh=()=>({t:0,f:0,h:0,r:0,er:0,ef:0,cr:0,ex:0,ct:0,dn:{},snd:true});
+let S;try{S=Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=fresh()}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let G=null,CR={seq:[],cat:1,rules:null,done:false},cur='',dr=null;const $=s=>document.querySelector(s),pk=a=>a[Math.random()*a.length|0],sh=a=>{a=[...a];for(let i=a.length;i>1;){const j=Math.random()*i--|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+let ac;function tone(f,t=0){if(!S.snd)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.07;o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.15)}catch(e){}}
+function speak(t){if(!S.snd||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='tr-TR';u.rate=.9;speechSynthesis.speak(u)}catch(e){}}
+function snd(){S.snd=!S.snd;save();if(!S.snd)try{speechSynthesis.cancel()}catch(e){}view()}
+const sb=()=>`<button class="btn s" onclick="snd()">Ses: ${S.snd?'Açık':'Kapalı'}</button>`;
+const go=h=>{$('#app').innerHTML=h;scrollTo(0,0)},bd=()=>BADGES.map(b=>`<span class="bd ${b[2](S)?'':'lk'}"><b>★ ${b[0]}</b><br>${b[1]}</span>`).join('');
+/* kural denetimi: dizi, L uzunluklu birimin tekrarı mı? (yalnızca ezberlenmiş cevaba değil, mantıksal tutarlılığa bakar) */
+const consistent=(a,L)=>a.every((x,i)=>x===a[i%L]),ruleTxt=U=>U.map(nm).join(' – ')+' tekrar ediyor.';
+/* ===== EKRANLAR ===== */
+function view(){({welcome,menu,game,teacher,creator}[cur]||welcome)()}
+function welcome(){cur='welcome';go(`<div class="top"><span></span>${sb()}</div><h1>Örüntü Dedektifleri</h1><div style="width:150px;margin:auto">${DET}</div><p class="say">Renkli Orman'da örüntüler karıştı! Tekrar eden kuralı bul, eksik parçaları tamamla.</p><button class="btn g" onclick="menu();speak('Haydi dedektif, örüntüleri inceleyelim!')">Başla</button>`)}
+function menu(){cur='menu';go(`<div class="top"><span></span>${sb()}</div><h1>Bölümler</h1>${WD.map((n,i)=>{const k=TS[i].filter(t=>S.dn[t.id]).length;return`<div class="w"><b>Bölüm ${i+1}</b><br>${n}<br><span class="prog">${k} / ${TS[i].length}${k===TS[i].length?' ✓':''}</span><br><button class="btn g" onclick="start(${i+1})">Oyna</button></div>`}).join('')}<div class="w"><b>Bölüm 5</b><br>Kendi Örüntünü Oluştur<br><span class="prog">${S.cr} örüntü</span><br><button class="btn g" onclick="newCreator()">Oluştur</button></div><h2>Rozetlerim</h2>${bd()}<p><button class="btn b" onclick="teacher()">Öğretmen Paneli</button><button class="btn s" onclick="resetAll()">Baştan Başla</button></p>`)}
+function start(w){G={w,i:0,hints:0,n:0};tq()}
+function tq(){const t=TS[G.w-1][G.i];Object.assign(G,{t,o:sh([t.ans,...t.d]),stage:0,wr:0,used:false,ok:false,found:false,shake:false,off:[],msg:t.e!==undefined?'Bu dizide bir parça yanlış yerleşmiş. Hatalı parçaya dokun!':'Örüntüyü incele. Sıradaki parça hangisi?'});game();speak(G.msg)}
+function game(){cur='game';const t=G.t,err=t.e!==undefined;let cells='';
+t.seq.forEach((k,i)=>{const u=G.stage>=3&&i<t.L?' u':'';
+if(err&&i===t.e&&G.found)cells+=G.ok?`<div class="c pop">${tk(t.ans)}</div>`:`<div class="slot hz">?</div>`;
+else if(err&&!G.ok)cells+=`<button class="c${u}" onclick="tapWrong(${i})" aria-label="${nm(k)}">${tk(k)}</button>`;else cells+=`<div class="c${u}">${tk(k)}</div>`});
+if(!err)cells+=G.ok?`<div class="c pop">${tk(t.ans)}</div>`:`<div class="slot hz">?</div>`;
+const showO=!G.ok&&(!err||G.found);
+go(`<div class="top"><button class="btn s" onclick="if(confirm('Ana menüye dönmek istiyor musun? İlerlemen kaydedildi.'))menu()">Ana Menü</button><span class="prog">Bölüm ${G.w} · ${G.i+1} / ${TS[G.w-1].length}</span>${sb()}</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap"><div style="width:80px">${DET}</div><div class="say" aria-live="polite">${G.msg}</div></div>
+<div class="row ${G.shake?'shake':''}">${cells}</div>
+${showO?`<div class="opts">${G.o.map(o=>`<div class="o ${G.off.includes(o)?'off':''}" tabindex="0" role="button" aria-label="${nm(o)}" onpointerdown="pd(event,'${o}')" onpointermove="pm(event)" onpointerup="pu(event)" onpointercancel="pc2()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();answer('${o}')}">${tk(o)}</div>`).join('')}</div>`:''}
+${G.ok?`<button class="btn g" onclick="nextT()">${G.i+1>=TS[G.w-1].length?'Bölümü bitir':'Sonraki görev'}</button>`:`<button class="btn b" onclick="hint()">İpucu</button><button class="btn s" onclick="speak(G.msg)">Dinle</button>`}`);
+if(G.shake)setTimeout(()=>{G.shake=false},500)}
+function say(m){G.msg=m;speak(m)}
+function hint(){if(G.ok)return;G.used=true;G.hints++;G.stage=Math.min(G.stage+1,3);say(HINTS[G.stage-1]);game()}
+function tapWrong(i){const t=G.t;if(G.ok||G.found)return;
+if(i>=t.L&&t.seq[i]!==t.seq[i%t.L]){G.found=true;if(!G.wr&&!G.used)S.ef++;tone(500);say('Hatalı parçayı buldun! Şimdi yerine hangi parça uygun?');game()}
+else{G.wr++;G.stage=Math.min(G.stage+1,3);G.shake=true;tone(330);say(pk(MIS)+' '+HINTS[G.stage-1]);game()}}
+/* ===== SEÇ / SÜRÜKLE ===== */
+function pd(e,o){e.preventDefault();dr={o,x:e.clientX,y:e.clientY,mv:false,cl:null,el:e.currentTarget};try{dr.el.setPointerCapture(e.pointerId)}catch(x){}}
+function pm(e){if(!dr)return;if(!dr.mv&&Math.hypot(e.clientX-dr.x,e.clientY-dr.y)>8){dr.mv=true;dr.cl=dr.el.cloneNode(true);dr.cl.className='o drag';dr.cl.style.width=dr.el.offsetWidth+'px';document.body.appendChild(dr.cl)}if(dr.cl){dr.cl.style.left=e.clientX+'px';dr.cl.style.top=e.clientY+'px'}}
+function pc2(){if(dr&&dr.cl)dr.cl.remove();dr=null}
+function pu(e){if(!dr)return;const d=dr;pc2();if(!d.mv){answer(d.o);return}
+if(document.elementsFromPoint(e.clientX,e.clientY).some(x=>x.classList&&x.classList.contains('hz')))answer(d.o);else{say('Parçayı boş alana bırakabilirsin.');game()}}
+function answer(o){if(G.ok||G.off.includes(o))return;const t=G.t,s=[...t.seq];let full;
+if(t.e!==undefined){s[t.e]=o;full=s}else full=[...s,o];
+if(consistent(full,t.L)){G.ok=true;S.t++;G.n++;S.dn[t.id]=1;S[G.wr?'r':G.used?'h':'f']++;if(t.e!==undefined)S.er++;save();tone(523);tone(659,.15);tone(784,.3);say(pk(GOOD)+' Kural: '+ruleTxt(t.U))}
+else{G.wr++;G.off.push(o);G.stage=Math.min(G.stage+1,3);G.shake=true;tone(330);say(pk(MIS)+' '+HINTS[G.stage-1])}game()}
+function nextT(){G.i++;if(G.i>=TS[G.w-1].length)return end();tq()}
+function end(){cur='end';const all=[1,2,3,4].every(w=>wd(S,w));go(`<h1>${all?'Büyük Dedektif!':'Bölüm Tamam!'}</h1><div style="width:130px;margin:auto">${DET}</div><p class="say">Bu turda ${G.n} görevi tamamladın, ${G.hints} kez ipucu kullandın. İpucu kullanmak ve yeniden denemek iyi bir dedektif davranışı!</p>${bd()}<p>${G.w<4?`<button class="btn g" onclick="start(${G.w+1})">Sonraki bölüm</button>`:`<button class="btn g" onclick="newCreator()">Kendi örüntünü oluştur</button>`}<button class="btn b" onclick="start(${G.w})">Yeniden oyna</button><button class="btn s" onclick="menu()">Ana Menü</button></p>`);speak('Bölümü tamamladın, dedektif!')}
+/* ===== BÖLÜM 5: KENDİ ÖRÜNTÜNÜ OLUŞTUR ===== */
+function newCreator(){CR={seq:[],cat:CR.cat||1,rules:null,done:false,msg:'Parçaları seçerek bir örüntü yap. Tekrar eden birimi en az üç kez yerleştir!'};creator()}
+function findL(s){for(let L=2;L<=4;L++)if(s.length>=3*L&&consistent(s,L)&&new Set(s.slice(0,L)).size>1)return L;return 0}
+function creator(){cur='creator';const names=['Renkler','Şekiller','Hayvanlar','Hareketler'];
+go(`<div class="top"><button class="btn s" onclick="menu()">Ana Menü</button><span class="prog">Bölüm 5 · Örüntü Atölyesi</span>${sb()}</div><div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap"><div style="width:80px">${DET}</div><div class="say" aria-live="polite">${CR.msg}</div></div>
+<div class="row">${CR.seq.length?CR.seq.map(k=>`<div class="c">${tk(k)}</div>`).join(''):'<div class="slot">?</div>'}</div>
+${CR.rules?`<h2>Benim örüntümün kuralı...</h2>${CR.rules.map((r,i)=>`<button class="btn b" ${CR.done?'disabled':''} onclick="pickRule(${i})">${r[0]}</button>`).join('<br>')}${CR.done?`<br><button class="btn g" onclick="newCreator()">Yeni örüntü</button>`:''}`:
+`<div>${names.map((n,i)=>`<button class="btn s ${CR.cat===i+1?'':'g'}" onclick="CR.cat=${i+1};creator()">${n}</button>`).join('')}</div><div class="opts">${Object.keys(TOK[CR.cat]).map(c=>`<button class="o" style="cursor:pointer" onclick="addTok('${CR.cat}${c}')" aria-label="${TOK[CR.cat][c][0]}">${tk(CR.cat+c)}</button>`).join('')}</div>
+<div><button class="btn s" onclick="CR.seq.pop();CR.msg='Son parça silindi.';creator()">Sonuncuyu sil</button><button class="btn s" onclick="CR.seq=[];creator()">Temizle</button><button class="btn g" onclick="explain()">Kuralı açıkla</button></div>`}`)}
+function addTok(k){if(CR.seq.length>=12){CR.msg='Örüntü yeterince uzun! Şimdi kuralı açıklayabilirsin.';return creator()}CR.seq.push(k);tone(440);CR.msg=`${CR.seq.length} parça yerleştirdin.`;creator()}
+function explain(){const L=findL(CR.seq);
+if(!L){CR.msg='Örüntün henüz tekrar etmiyor. Tekrar eden birimi en az üç kez yerleştir (örneğin kırmızı – mavi, kırmızı – mavi, kırmızı – mavi).';speak(CR.msg);return creator()}
+const U=CR.seq.slice(0,L),others=Object.keys(TOK[U[0][0]]).map(c=>U[0][0]+c).filter(k=>!U.includes(k)),
+r=[[ruleTxt(U),1],[nm(U[0])+' tekrar ediyor.',0],[ruleTxt([...U,others[0]||U[0]]),0]];
+CR.rules=sh(r.filter((x,i,a)=>a.findIndex(y=>y[0]===x[0])===i));CR.L=L;if(!CR.counted){S.cr++;CR.counted=1;save()}CR.msg='Harika bir örüntü yaptın! Sence kuralı hangisi?';speak(CR.msg);creator()}
+function pickRule(i){if(CR.rules[i][1]){CR.done=true;S.ex++;save();tone(523);tone(659,.15);tone(784,.3);CR.msg='Harika! Kuralı doğru açıkladın!';speak(CR.msg)}else{tone(330);CR.msg='Bir kez daha inceleyelim. Hangi parçalar tekrar ediyor?';speak(CR.msg)}creator()}
+/* ===== ÖĞRETMEN PANELİ ===== */
+function teacher(){cur='teacher';go(`<div class="top"><button class="btn s" onclick="menu()">Ana Menü</button>${sb()}</div><h2>Öğretmen Paneli</h2><table><tr><td>Tamamlanan görev sayısı</td><td><b>${S.t}</b> (benzersiz: ${Object.keys(S.dn).length} / 32)</td></tr><tr><td>İlk denemede doğru</td><td><b>${S.f}</b></td></tr><tr><td>İpucu kullanılan görevler</td><td><b>${S.h}</b></td></tr><tr><td>Yeniden deneyip tamamlanan görevler</td><td><b>${S.r}</b></td></tr><tr><td>Örüntü hatasını fark etme</td><td><b>${S.ef}</b> ilk dokunuşta bulundu · <b>${S.er}</b> hata düzeltildi</td></tr><tr><td>Kendi örüntüsünü oluşturma</td><td><b>${S.cr}</b> örüntü</td></tr><tr><td>Kuralı açıklama</td><td><b>${S.ex}</b> doğru açıklama</td></tr><tr><td>Tamamlanan bölümler</td><td><b>${[1,2,3,4].map(w=>`B${w}: ${wd(S,w)?'✓':'–'}`).join(' ')}</b></td></tr></table><p class="note">Veriler yalnızca oyundaki performansı yansıtır; çocuğun gelişimi hakkında kesin yargı oluşturmaz. Kişisel veri toplanmaz; kayıtlar yalnızca bu cihazın tarayıcısında durur ve hiçbir yere gönderilmez.</p><button class="btn s" onclick="resetAll()">Verileri sıfırla</button>`)}
+function resetAll(){if(confirm('Tüm ilerleme ve sonuçlar silinecek. Emin misin?')){const s=S.snd;S=fresh();S.snd=s;save();menu()}}
+welcome();
+</script></body></html>
