@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kayıp Parçayı Bul!</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#33415c;background:linear-gradient(160deg,#d7f0ff,#fff6d6 55%,#ffe0ec);font-size:clamp(16px,2.3vw,22px)}
+#app{max-width:900px;margin:0 auto;padding:12px 14px 40px;text-align:center}
+h1{font-size:clamp(28px,6vw,50px);margin:8px 0;color:#e76f51}h2{margin:6px 0;color:#e76f51}
+.btn{font:inherit;font-weight:700;border:0;border-radius:999px;padding:.6em 1.5em;margin:5px;background:#ff9f1c;color:#fff;box-shadow:0 5px 0 #c97800;cursor:pointer;min-height:50px}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #c97800}
+.btn.g{background:#2ec4b6;box-shadow:0 5px 0 #1a8d82}.btn.b{background:#6c7ae0;box-shadow:0 5px 0 #4553b8}.btn.s{background:#9aa5b8;box-shadow:0 5px 0 #6c778c;font-size:.8em;min-height:42px}
+.btn:focus-visible,.pc:focus-visible{outline:4px solid #e76f51;outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.prog{background:#fffa;border-radius:999px;padding:6px 16px;font-weight:700}
+.card{background:#fff;border:5px solid #ffd166;border-radius:28px;width:min(86vw,380px);margin:8px auto;padding:6px}
+.card svg{width:100%;display:block}
+.hole *{fill:#fff9;stroke:#8d99ae;stroke-width:1.3;stroke-dasharray:3 2}
+.pop{animation:pop .8s ease 2;transform-box:fill-box;transform-origin:center}@keyframes pop{50%{transform:scale(1.15)}}
+.shake{animation:sk .4s}@keyframes sk{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.say{background:#fff;border:3px solid #6c7ae0;border-radius:20px;padding:10px 14px;max-width:560px;margin:6px auto;font-weight:600}
+.pcs{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:10px 0;min-height:110px}
+.pc{background:#fff;border:4px solid #a8dadc;border-radius:22px;padding:6px;width:min(27vw,120px);min-width:84px;cursor:grab;touch-action:none;user-select:none}
+.pc svg{width:100%;height:84px;display:block;pointer-events:none}.pc.sel{border-color:#ff9f1c;background:#fff4d9}.pc.off{opacity:.35}
+.drag{position:fixed;z-index:9;pointer-events:none;opacity:.9;transform:translate(-50%,-50%) scale(1.15)}
+.w{display:inline-block;background:#fff;border-radius:22px;padding:12px;width:190px;margin:6px;border:4px solid #ffc8dd;vertical-align:top}
+.bd{display:inline-block;background:#fff;border:3px solid #ffd166;border-radius:14px;padding:6px 10px;margin:3px;font-size:.8em}.bd.lk{opacity:.35;filter:grayscale(1)}
+</style></head><body><div id="app"></div>
+<script>
+/* ===== ÇİZİM YARDIMCILARI (100x100) ===== */
+const E=(x,y,a,b,f)=>`<ellipse cx="${x}" cy="${y}" rx="${a}" ry="${b}" fill="${f}"/>`,C=(x,y,r,f)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${f}"/>`,
+R=(x,y,w,h,f)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${f}"/>`,P=(p,f)=>`<polygon points="${p}" fill="${f}"/>`,
+F=(d,f)=>`<path d="${d}" fill="${f}"/>`,L=(d,w,s)=>`<path d="${d}" stroke="${s}" stroke-width="${w}" stroke-linecap="round" fill="none"/>`,
+O=(x,y,r,w,s)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${s}" stroke-width="${w}"/>`;const K='#333';
+/* ===== PARÇALAR: b=sınır kutusu [x,y,w,h] ===== */
+const SX=i=>6+i*15,TK={a:x=>C(x+6,50,6,'#e63946'),b:x=>R(x,44,12,12,'#3a86ff'),c:x=>P(`${x},56 ${x+12},56 ${x+6},44`,'#ffc300'),d:x=>C(x+6,50,6,'#2d9c5a')};
+const PR={},OB={},pt=(id,b,s)=>PR[id]={b,s};
+pt('tekB',[9,54,32,32],O(25,70,14,4,K)+C(25,70,2,K));
+pt('cati',[14,15,72,32],P('14,47 50,15 86,47','#e76f51'));
+pt('kapi',[43,64,16,26],R(43,64,16,26,'#8d5a34')+C(55,77,1.6,'#ffd166'));
+pt('pencere',[26,54,14,14],R(26,54,14,14,'#8ecae6')+L('M33 54V68M26 61H40',1.4,'#fff'));
+pt('pencereR',[60,54,14,14],R(60,54,14,14,'#8ecae6')+L('M67 54V68M60 61H74',1.4,'#fff'));
+pt('merdiven',[8,78,14,12],R(8,86,14,4,'#a98467')+R(12,82,10,4,'#a98467')+R(16,78,6,4,'#a98467'));
+pt('kanatU',[45,20,30,28],P('45,48 60,48 74,20 62,20','#e63946'));
+pt('kanatK',[48,18,46,40],E(70,38,22,18,'#e5698b'));
+pt('kulak',[66,2,16,36],E(74,20,5,16,'#c9b8a8'));
+pt('yuzgec',[36,12,26,24],P('38,32 50,14 60,33','#0096c7'));
+pt('kanatS',[12,26,48,26],P('38,50 14,28 58,48','#2a9df4'));
+pt('kabuk',[10,28,80,42],F('M12 68A38 38 0 0 1 88 68Z','#6a994e')+F('M30 60A22 22 0 0 1 70 60Z','#8ab35a'));
+pt('kulakF',[52,36,20,32],E(62,52,10,16,'#7d8795'));
+pt('sapF',[60,46,32,36],L('M66 50Q88 52 86 66Q84 78 62 76',6,'#f4a261'));
+pt('yaprak',[50,26,32,32],C(66,42,16,'#40916c'));
+pt('bas',[34,16,32,24],R(36,18,28,20,'#ffd166')+C(44,28,3,K)+C(56,28,3,K));
+pt('kol',[12,40,24,12],R(14,42,20,8,'#457b9d'));
+pt('bacak',[38,70,12,22],R(40,72,8,18,'#457b9d'));
+[[10,'sT',x=>P(`${x},58 ${x+18},58 ${x+9},40`,'#ffc300'),[0,40,18,18]],[32,'sK',x=>R(x,40,18,18,'#3a86ff'),[0,40,18,18]],[54,'sD',x=>C(x+9,49,9,'#e63946'),[0,40,18,18]],[76,'sR',x=>R(x,43,18,11,'#2ec4b6'),[0,43,18,11]]]
+.forEach(([x,id,f,b])=>pt(id,[x,b[1],b[2],b[3]],f(x)));
+['a','b','c','d'].forEach(c=>pt('p'+c,[81,44,12,12],TK[c](81)));
+OB.ev={base:R(20,45,60,45,'#ffe0a3'),parts:['cati','kapi','pencere','pencereR','merdiven']};
+OB.bisiklet={base:L('M25 70L45 50L65 70M45 50L70 45M70 45L75 70',3,'#e63946')+O(75,70,14,4,K),parts:['tekB']};
+OB.ucak={base:E(50,50,40,9,'#ced4da')+P('12,48 4,30 22,46','#e63946')+P('45,52 60,52 74,80 62,80','#e63946'),parts:['kanatU']};
+OB.kelebek={base:E(31,38,22,18,'#e5698b')+E(35,66,16,14,'#ffb703')+E(65,66,16,14,'#ffb703')+R(47,28,6,46,K),parts:['kanatK']};
+OB.tavsan={base:E(45,68,25,18,'#c9b8a8')+C(68,48,14,'#c9b8a8')+E(62,18,5,17,'#c9b8a8')+C(20,66,7,'#fff')+R(34,80,8,12,'#c9b8a8')+R(52,80,8,12,'#c9b8a8'),parts:['kulak']};
+OB.balik={base:E(45,50,32,20,'#48cae4')+P('74,50 97,30 97,70','#48cae4')+C(26,45,3,K),parts:['yuzgec']};
+OB.kus={base:E(50,55,22,16,'#4cc9f0')+C(72,40,10,'#4cc9f0')+P('80,37 95,43 80,47','#ffb703')+P('30,60 6,66 28,70','#4cc9f0')+L('M46 70V88M56 70V88',3,K),parts:['kanatS']};
+OB.fil={base:E(48,55,30,22,'#9aa5b1')+C(78,46,15,'#9aa5b1')+L('M88 52Q99 70 88 90',9,'#9aa5b1')+R(26,70,10,22,'#9aa5b1')+R(58,70,10,22,'#9aa5b1'),parts:['kulakF']};
+OB.kaplumbaga={base:C(92,62,8,'#a7c957')+R(26,66,12,16,'#a7c957')+R(60,66,12,16,'#a7c957'),parts:['kabuk']};
+OB.fincan={base:P('22,40 66,40 60,86 28,86','#f4a261')+R(18,36,52,6,'#e76f51'),parts:['sapF']};
+OB.agac={base:R(44,58,12,34,'#8d5a34')+C(36,42,16,'#52b788')+C(50,28,16,'#52b788'),parts:['yaprak']};
+OB.robot={base:R(35,38,30,34,'#a8dadc')+C(50,55,5,'#e63946')+R(66,42,20,8,'#457b9d')+C(88,46,6,'#e63946')+R(52,72,8,18,'#457b9d')+R(50,88,16,6,'#e63946'),parts:['bas','kol','bacak']};
+OB.sekil={base:R(4,30,92,40,'#fff7e0'),parts:['sT','sK','sD','sR']};
+/* ===== GÖREVLER =====
+ o=nesne, m=eksik parça(lar) (iki parçalı görevlerde sırayla), d=yanlış seçenekler ('id@sm' küçük, '@flip' ayna, '@rot' ters, '@f' başka parça), ty:'odd' uygun olmayan parça (f), seq=örüntü, h=özel ipuçları */
+const mk=(w,a)=>a.map((x,j)=>({id:w+'.'+(j+1),w,...x}));
+const pat=(seq,d)=>({ty:'pat',seq,m:['p'+seq.slice(-1)],d:d.map(c=>'p'+c)});
+const T=[
+mk(1,[{o:'kelebek',m:['kanatK']},{o:'balik',m:['yuzgec']},{o:'tavsan',m:['kulak']},{o:'kus',m:['kanatS']},{o:'kaplumbaga',m:['kabuk']},{o:'fil',m:['kulakF']}]),
+mk(2,[{o:'bisiklet',m:['tekB']},{o:'ev',m:['cati']},{o:'ev',m:['pencere']},{o:'fincan',m:['sapF']},{o:'ucak',m:['kanatU']},{o:'agac',m:['yaprak']}]),
+mk(3,[{o:'sekil',m:['sT'],d:['sK','sD'],sn:'üçgen'},{o:'sekil',m:['sK'],d:['sT','sR'],sn:'kare'},{o:'sekil',m:['sD'],d:['sR','sT'],sn:'daire'},{o:'sekil',m:['sR'],d:['sK','sD'],sn:'dikdörtgen'},pat('ababab',['a','c']),{o:'ev',m:['pencereR'],d:['pencereR@flip','tekB@f'],h:['Boşluğun şekline dikkat et.','Evin iki yanı birbirine benzer. Sol pencerenin eşini düşün.','Sence hangi parça resmin geri kalanıyla uyumlu?']}]),
+mk(4,[{o:'ucak',m:['kanatU'],d:['kanatU@sm','kanatU@flip']},{o:'kus',m:['kanatS'],d:['kanatS@flip','kanatS@rot']},{o:'ev',m:['cati','pencere'],d:['tekB@f'],two:1},{ty:'odd',o:'ev',f:'tekB'},{o:'robot',m:['bas']},{o:'ev',m:['merdiven'],d:['merdiven@flip','tekB@f'],h:['Boşluğun şekline dikkat et.','Önceki seçimini yeniden düşün: basamaklar hangi yöne yükseliyor?','Sence hangi parça resmin geri kalanıyla uyumlu?']}])];
+const WD=[['Hayvanları Tamamla','#ffb703'],['Nesneleri Tamamla','#4895ef'],['Şekilleri Tamamla','#2ec4b6'],['Gizemli Resimler','#9b5de5']];
+const H=['Boşluğun şekline dikkat et.','Bu parçanın yönünü incele.','Sence hangi parça resmin geri kalanıyla uyumlu?'];
+const GOOD=['Harika! Eksik parçayı buldun!','Şimdi resim tamamlandı!','Parçanın yönüne çok dikkat ettin!'],MIS=['Bir kez daha deneyelim.','Boşluğun şekline tekrar bakalım.','Yeni bir ipucu seni bekliyor.'];
+const wd=(s,w)=>T[w-1].every(t=>s.dn[t.id]);
+const BADGES=[['Dikkatli Gözlemci','İlk kontrolde 3 doğru',s=>s.f>=3],['Parça Avcısı','10 görev',s=>s.t>=10],['Şekil Uzmanı','Şekilleri Tamamla bitti',s=>wd(s,3)],['Tamamlama Ustası','Tüm bölümler bitti',s=>[1,2,3,4].every(w=>wd(s,w))]];
+const MUCIT=`<svg viewBox="0 0 80 90" aria-hidden="true"><rect x="20" y="70" width="40" height="18" rx="8" fill="#6c7ae0"/><circle cx="40" cy="48" r="22" fill="#ffd8b5"/><path d="M16 38Q40 6 64 38Z" fill="#ff9f1c"/><rect x="18" y="36" width="44" height="6" rx="3" fill="#c97800"/><circle cx="30" cy="48" r="8" fill="#cdeefd" stroke="#5a4fcf" stroke-width="3"/><circle cx="50" cy="48" r="8" fill="#cdeefd" stroke="#5a4fcf" stroke-width="3"/><circle cx="30" cy="48" r="2.5" fill="#333"/><circle cx="50" cy="48" r="2.5" fill="#333"/><path d="M32 63Q40 70 48 63" stroke="#c0392b" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;
+/* ===== DURUM / SES ===== */
+const KEY='kayipParcayiBul_v1',fresh=()=>({t:0,f:0,h:0,r:0,dn:{},snd:true});
+let S;try{S=Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=fresh()}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let G=null,cur='',dr=null;const $=s=>document.querySelector(s),pk=a=>a[Math.random()*a.length|0],sh=a=>{a=[...a];for(let i=a.length;i>1;){const j=Math.random()*i--|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+let ac;function tone(f,t=0){if(!S.snd)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.07;o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.15)}catch(e){}}
+function speak(t){if(!S.snd||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='tr-TR';u.rate=.9;speechSynthesis.speak(u)}catch(e){}}
+function snd(){S.snd=!S.snd;save();if(!S.snd)try{speechSynthesis.cancel()}catch(e){}view()}
+const sb=()=>`<button class="btn s" onclick="snd()">Ses: ${S.snd?'Açık':'Kapalı'}</button>`;
+/* ===== GÖRSEL ÜRETİM ===== */
+const bc=b=>[b[0]+b[2]/2,b[1]+b[3]/2];
+function pcs(o){const[i,v]=o.split('@'),p=PR[i],[x,y]=bc(p.b);const t={flip:`translate(${2*x} 0) scale(-1 1)`,rot:`rotate(180 ${x} ${y})`,sm:`translate(${x} ${y}) scale(.6) translate(${-x} ${-y})`}[v];return t?`<g transform="${t}">${p.s}</g>`:p.s}
+function fit(o,hb){const p=PR[o.split('@')[0]],[x,y]=bc(p.b),[hx,hy]=bc(hb),s=Math.min(hb[2]/p.b[2],hb[3]/p.b[3]);return`<g transform="translate(${hx} ${hy}) scale(${s}) translate(${-x} ${-y})">${p.s}</g>`}
+const holes=t=>t.m?t.m.map(m=>PR[m].b):[];
+function card(t,o){const[i,v]=o.split('@');let b=PR[i].b,s;if(v==='f'){b=holes(t)[0];s=fit(o,b)}else s=pcs(o);return`<svg viewBox="${b[0]-3} ${b[1]-3} ${b[2]+6} ${b[3]+6}">${s}</svg>`}
+function scene(t){let s,hz='';const hs=holes(t);
+if(t.seq)s=R(4,36,92,28,'#fff7e0')+[...t.seq.slice(0,5)].map((c,i)=>TK[c](SX(i))).join('');
+else{const ob=OB[t.o];s=ob.base+ob.parts.filter(p=>t.ty==='odd'||!t.m.includes(p)).map(p=>PR[p].s).join('')}
+if(G.ok)s+=t.m?t.m.map(m=>`<g class="pop">${PR[m].s}</g>`).join(''):'';
+else hs.forEach((b,j)=>{const o=G.pl[j];if(o)s+=t.m[j]===o.split('@')[0]?pcs(o):fit(o,b);else s+=t.seq?`<rect class="hole" x="${b[0]-1}" y="43" width="14" height="14" rx="3"/>`:`<g class="hole">${PR[t.m[j]].s}</g>`;
+hz+=`<rect class="hz" data-j="${j}" x="${b[0]-6}" y="${b[1]-6}" width="${b[2]+12}" height="${b[3]+12}" fill="transparent" onclick="hzClick(${j})"/>`});
+return`<svg viewBox="0 0 100 100" role="img" aria-label="Eksik parçalı resim">${s}${hz}</svg>`}
+function opts(t){if(t.ty==='odd')return sh([t.f,...sh(OB[t.o].parts).slice(0,2)]);
+let d=t.d;if(!d){const own=OB[t.o].parts,pool=Object.keys(PR).filter(k=>!own.includes(k)&&!/^s[TKDR]$|^p/.test(k));d=[pk(pool)+'@f',t.m[0]+'@sm']}return sh([...t.m,...d])}
+const task=t=>t.seq?'Örüntüyü tamamla!':t.ty==='odd'?'Hangi parça bu resme uygun değil?':t.two?'İki eksik parça var. Sırayla yerleştir!':t.sn?`Eksik ${t.sn} şeklini bul ve yerleştir!`:'Minik Mucit için eksik parçayı bul!';
+/* ===== EKRANLAR ===== */
+const go=h=>{$('#app').innerHTML=h;scrollTo(0,0)},bd=()=>BADGES.map(b=>`<span class="bd ${b[2](S)?'':'lk'}"><b>★ ${b[0]}</b><br>${b[1]}</span>`).join('');
+function view(){({welcome,menu,game}[cur]||welcome)()}
+function welcome(){cur='welcome';go(`<div class="top"><span></span>${sb()}</div><h1>Kayıp Parçayı Bul!</h1><div style="width:150px;margin:auto">${MUCIT}</div><p class="say">Renkli Resimler Dünyası'nda parçalar kayboldu! Dikkatlice incele, eksik parçayı tahmin et, doğru parçayı yerleştir ve çözümünü kontrol et!</p><button class="btn g" onclick="menu();speak('Haydi eksik parçayı bulalım!')">Başla</button>`)}
+function menu(){cur='menu';go(`<div class="top"><span></span>${sb()}</div><h1>Bölümler</h1>${WD.map((w,i)=>{const n=T[i].filter(t=>S.dn[t.id]).length;return`<div class="w" style="border-color:${w[1]}"><b>Bölüm ${i+1}</b><br>${w[0]}<br><span class="prog">${n} / ${T[i].length}${n===6?' ✓':''}</span><br><button class="btn g" onclick="start(${i+1})">Oyna</button></div>`}).join('')}<h2>Rozetlerim</h2>${bd()}<p><button class="btn s" onclick="resetAll()">Baştan Başla</button></p>`)}
+function start(w){G={w,i:0,hints:0,n:0};tq()}
+function tq(){const t=T[G.w-1][G.i];Object.assign(G,{t,o:opts(t),pl:{},sel:null,stage:0,wr:0,used:false,ok:false,shake:false,msg:task(t)});game();speak(task(t))}
+function game(){cur='game';const t=G.t,odd=t.ty==='odd',placed=Object.values(G.pl),tray=G.o.filter(o=>!placed.includes(o));
+const pcs_=tray.map(o=>`<div class="pc ${G.sel===o?'sel':''} ${G.off&&G.off.includes(o)?'off':''}" tabindex="0" role="button" aria-label="Parça seçeneği" onpointerdown="pd(event,'${o}')" onpointermove="pm(event)" onpointerup="pu(event)" onpointercancel="pc2()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();G.sel='${o}';game()}">${card(t,o)}</div>`).join('');
+go(`<div class="top"><button class="btn s" onclick="if(confirm('Ana menüye dönmek istiyor musun? İlerlemen kaydedildi.'))menu()">Ana Menü</button><span class="prog">Bölüm ${G.w} · ${G.i+1} / 6</span>${sb()}</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap"><div style="width:80px">${MUCIT}</div><div class="say" aria-live="polite">${G.msg}</div></div>
+<div class="card ${G.shake?'shake':''}">${scene(t)}</div>
+${G.ok?`<button class="btn g" onclick="nextT()">${G.i>=5?'Bölümü bitir':'Sonraki görev'}</button>`:`<div class="pcs">${pcs_}</div><div><button class="btn g" onclick="check()">Kontrol Et</button><button class="btn b" onclick="hint()">İpucu</button><button class="btn b" onclick="speak(G.msg)">Dinle</button>${G.sel&&!odd?`<button class="btn" onclick="hzClick(-1)">Parçayı yerleştir</button>`:''}</div>`}`);
+if(G.shake)setTimeout(()=>{G.shake=false},500)}
+function say(m){G.msg=m;speak(m)}
+const hs_=()=>G.t.seq?['Önce şekillerin sırasına bak. Hangi şekiller tekrar ediyor?','Sıranın başından başla ve sırayla say. Sonra hangi şekil gelir?',H[2]]:G.t.ty==='odd'?['Parçaların hepsi bu resme ait mi? Şekillere bak.','Hangi parça başka bir yerde kullanılır?',H[2]]:G.t.h||H;
+function hint(){if(G.ok)return;G.used=true;G.hints++;G.stage=Math.min(G.stage+1,3);say(hs_()[G.stage-1]);game()}
+/* ===== SÜRÜKLE-BIRAK + DOKUN-SEÇ ===== */
+function pd(e,o){e.preventDefault();dr={o,x:e.clientX,y:e.clientY,mv:false,cl:null,el:e.currentTarget};try{dr.el.setPointerCapture(e.pointerId)}catch(x){}}
+function pm(e){if(!dr)return;if(!dr.mv&&Math.hypot(e.clientX-dr.x,e.clientY-dr.y)>8){dr.mv=true;dr.cl=dr.el.cloneNode(true);dr.cl.className='pc drag';dr.cl.style.width=dr.el.offsetWidth+'px';document.body.appendChild(dr.cl)}if(dr.cl){dr.cl.style.left=e.clientX+'px';dr.cl.style.top=e.clientY+'px'}}
+function pc2(){if(dr&&dr.cl)dr.cl.remove();dr=null}
+function pu(e){if(!dr)return;const d=dr;pc2();if(!d.mv){G.sel=G.sel===d.o?null:d.o;game();return}
+const z=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.classList&&x.classList.contains('hz'));if(z&&G.t.ty!=='odd'){G.sel=d.o;hzClick(+z.dataset.j)}else{G.sel=null;say('Parçayı boşluğa bırakabilirsin.');game()}}
+function hzClick(j){const t=G.t;if(t.ty==='odd')return;
+if(!G.sel){if(j>=0&&G.pl[j]){delete G.pl[j];game()}else{say('Önce bir parçaya dokun, sonra boşluğa dokun.');game()}return}
+if(j<0){j=holes(t).findIndex((b,k)=>!G.pl[k]);if(j<0)j=0}
+G.pl[j]=G.sel;G.sel=null;tone(440);G.msg='Parça yerleşti. Şimdi Kontrol Et!';game()}
+/* ===== KONTROL ===== */
+function check(){if(G.ok)return;const t=G.t;let ok;
+if(t.ty==='odd'){if(!G.sel){say('Önce uygun olmayan parçaya dokun.');return game()}ok=G.sel===t.f}
+else{const hs=holes(t);if(hs.some((b,j)=>!G.pl[j])){say('Önce parçayı boşluğa yerleştir.');return game()}ok=hs.every((b,j)=>G.pl[j]===t.m[j])}
+if(ok){G.ok=true;S.t++;G.n++;S.dn[t.id]=1;S[G.wr?'r':G.used?'h':'f']++;save();tone(523);tone(659,.15);tone(784,.3);say(pk(GOOD)+(G.wr?' Yeni ipucuyla çözümünü düzelttin!':''))}
+else{G.wr++;G.stage=Math.min(G.stage+1,3);G.shake=true;tone(330);
+if(t.ty==='odd'){G.off=[...(G.off||[]),G.sel];G.sel=null}else{const hs=holes(t);hs.forEach((b,j)=>{if(G.pl[j]!==t.m[j])delete G.pl[j]})}
+say(pk(MIS)+' '+hs_()[G.stage-1])}game()}
+function nextT(){G.i++;G.off=[];if(G.i>=6)return end();tq()}
+function end(){cur='end';const all=[1,2,3,4].every(w=>wd(S,w));go(`<h1>${all?'Tamamlama Ustası!':'Bölüm Tamam!'}</h1><div style="width:130px;margin:auto">${MUCIT}</div><p class="say">Bu turda ${G.n} görevi tamamladın, ${G.hints} kez ipucu kullandın. İpucu kullanmak ve yeniden denemek harika bir düşünme yolu!</p>${bd()}<p>${G.w<4?`<button class="btn g" onclick="start(${G.w+1})">Sonraki bölüm</button>`:''}<button class="btn b" onclick="start(${G.w})">Yeniden oyna</button><button class="btn s" onclick="menu()">Ana Menü</button></p>`);speak('Bölümü tamamladın, minik mucit!')}
+function resetAll(){if(confirm('Tüm ilerleme silinecek. Emin misin?')){const s=S.snd;S=fresh();S.snd=s;save();menu()}}
+welcome();
+</script></body></html>
