@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gizemli Gölge Dedektifleri</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#2b2d42;background:linear-gradient(#bfe8ff 0,#e6f7c8 60%,#9fd67a 100%);font-size:clamp(16px,2.4vw,22px)}
+#app{max-width:900px;margin:0 auto;padding:12px 14px 90px;text-align:center;position:relative;z-index:1}
+#bg{position:fixed;left:0;bottom:0;width:100%;height:90px;z-index:0;pointer-events:none}
+h1{font-size:clamp(28px,6vw,52px);margin:8px 0;color:#2d6a4f}
+h2{margin:6px 0;color:#2d6a4f}
+.btn{font:inherit;font-weight:700;border:0;border-radius:999px;padding:.7em 1.6em;margin:6px;background:#ff9f1c;color:#fff;box-shadow:0 5px 0 #c97800;cursor:pointer;min-height:52px}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #c97800}
+.btn.g{background:#2d9c5a;box-shadow:0 5px 0 #1c6e3d}.btn.b{background:#3a86ff;box-shadow:0 5px 0 #1f5cc0}.btn.s{background:#8d99ae;box-shadow:0 5px 0 #5c677d;font-size:.8em;padding:.5em 1.1em;min-height:44px}
+.btn:focus-visible,.opt:focus-visible{outline:4px solid #3a86ff;outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.prog{font-weight:700;background:#fff8;border-radius:999px;padding:6px 16px}
+.stage{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.card{background:#fffbe8;border:5px solid #ffd166;border-radius:28px;width:min(58vw,300px);padding:8px}
+.card svg{width:100%;height:auto;display:block}
+.sh *:not([fill=none]){fill:#2b2d42}.sh [stroke]:not(.ring){stroke:#2b2d42}
+.ring{animation:pu 1s infinite alternate}@keyframes pu{to{opacity:.35}}
+.det{display:flex;align-items:center;gap:8px;max-width:330px}.det svg{width:76px;flex:none}
+.say{background:#fff;border-radius:20px;padding:10px 14px;border:3px solid #3a86ff;text-align:left;font-size:.9em}
+.q{font-size:1.3em;font-weight:800;margin:10px 0 4px}
+.opts{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.opt{font:inherit;font-weight:700;background:#fff;border:4px solid #8ecae6;border-radius:24px;padding:8px;width:min(29vw,170px);min-width:96px;cursor:pointer}
+.opt svg{width:100%;height:auto;display:block}
+.opt.off{opacity:.35;border-style:dashed}.opt.ok{border-color:#2d9c5a;background:#e3f9e5}
+.rs{display:flex;flex-direction:column;align-items:center;gap:4px}
+.rs .btn{max-width:520px;background:#3a86ff;box-shadow:0 5px 0 #1f5cc0}
+.rs .btn.ok{background:#2d9c5a;box-shadow:0 5px 0 #1c6e3d}
+.wrow{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+.w{background:#fff;border-radius:24px;padding:14px;width:230px;border:5px solid #95d5b2}
+.bd{display:inline-block;background:#fff;border-radius:16px;padding:8px 12px;margin:4px;border:3px solid #ffd166}.bd.lk{opacity:.4;filter:grayscale(1)}
+table{margin:10px auto;border-collapse:collapse;background:#fff;border-radius:12px;text-align:left}td,th{padding:8px 14px;border-bottom:1px solid #ddd}
+.note{font-size:.8em;max-width:600px;margin:8px auto;color:#444}
+</style></head><body>
+<div id="app"></div>
+<svg id="bg" viewBox="0 0 800 90" preserveAspectRatio="none" aria-hidden="true"><rect y="70" width="800" height="20" fill="#6aa84f"/><g fill="#2d6a4f"><rect x="60" y="45" width="10" height="30" fill="#7b4b2a"/><circle cx="65" cy="40" r="26"/><rect x="330" y="50" width="9" height="25" fill="#7b4b2a"/><circle cx="335" cy="42" r="22"/><rect x="700" y="45" width="10" height="30" fill="#7b4b2a"/><circle cx="705" cy="38" r="28"/></g><g><rect x="190" y="62" width="6" height="14" fill="#fff"/><path d="M180 63a16 12 0 0 1 26 0z" fill="#e63946"/><rect x="520" y="62" width="6" height="14" fill="#fff"/><path d="M510 63a16 12 0 0 1 26 0z" fill="#e63946"/></g></svg>
+<script>
+/* ===== VERİ: öğretmen yeni nesne/soru ekleyebilir =====
+ Yeni nesne: I içine {n:ad,c:renk,s:çizim,hl:[x,y,yarıçap],h2:biçimsel ipucu,h3:ayırt edici ipucu,r:gerekçe}
+ Yeni soru: QS[dünya] içine {a:'id',p:havuz} (rastgele seçenek) ya da {a:'id',o:['id','id','id']} (sabit seçenek)
+ Çizim yardımcıları: E elips, C daire, R dikdörtgen, P çokgen, F dolu yol, L çizgi, O halka; '@' ana rengi temsil eder */
+const E=(x,y,a,b,f='@')=>`<ellipse cx="${x}" cy="${y}" rx="${a}" ry="${b}" fill="${f}"/>`;
+const C=(x,y,r,f='@')=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${f}"/>`;
+const R=(x,y,w,h,f='@')=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${f}"/>`;
+const P=(p,f='@')=>`<polygon points="${p}" fill="${f}"/>`;
+const F=(d,f='@')=>`<path d="${d}" fill="${f}"/>`;
+const L=(d,w=5,s='@')=>`<path d="${d}" stroke="${s}" stroke-width="${w}" stroke-linecap="round" fill="none"/>`;
+const O=(x,y,r,w,s='@')=>`<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${s}" stroke-width="${w}"/>`;
+const K='#4a3b32',W='#fff';
+const I={
+tavsan:{n:'Tavşan',c:'#c9b8a8',s:E(45,68,25,18)+C(68,48,14)+E(62,18,5,17)+E(74,20,5,16)+C(20,66,7,W)+R(34,80,8,12)+R(52,80,8,12),hl:[68,22,22],h2:'Bu hayvanın kulakları uzun olabilir.',h3:'Bu hayvan zıplamayı sever ve uzun kulakları vardır.',r:'Çünkü kulakları uzun.'},
+kedi:{n:'Kedi',c:'#f4a261',s:E(45,70,25,14)+C(70,48,13)+P('60,42 62,24 71,37')+P('71,37 80,24 83,43')+L('M22 70C5 66 5 42 16 32',6)+R(30,78,7,14)+R(54,78,7,14),hl:[72,34,20],h2:'Bu hayvanın başında sivri kulaklar ve uzun bir kuyruk var.',h3:'Bu hayvan miyavlar ve sivri kulakları vardır.',r:'Çünkü kulakları sivri.'},
+kopek:{n:'Köpek',c:'#b08968',s:E(45,62,26,14)+C(74,46,12)+E(88,50,8,5)+E(66,50,5,11,K)+L('M20 58L8 40',6)+R(28,70,7,22)+R(56,70,7,22),hl:[82,48,20],h2:'Bu hayvanın kulakları sarkık ve burnu uzun.',h3:'Bu hayvan havlar ve kuyruğunu sallar.',r:'Çünkü kulağı sarkık ve burnu uzun.'},
+balik:{n:'Balık',c:'#48cae4',s:E(45,50,32,20)+P('74,50 97,30 97,70')+P('38,32 50,14 60,33')+P('45,66 55,84 60,66')+C(26,45,3,K),hl:[84,50,20],h2:'Bu canlının yüzgeçleri var ve bacağı yok.',h3:'Bu canlı suda yaşar ve yüzgeçleriyle yüzer.',r:'Çünkü yüzgeçleri var.'},
+kus:{n:'Kuş',c:'#4cc9f0',s:E(50,55,22,16)+C(72,40,10)+P('80,37 95,43 80,47','#ffb703')+P('38,50 14,28 58,48')+P('30,60 6,66 28,70')+L('M46 70V88M56 70V88',3,K),hl:[34,42,24],h2:'Bu hayvanın kanatları ve gagası var.',h3:'Bu hayvan kanatlarıyla uçar ve gagası vardır.',r:'Çünkü kanatları ve gagası var.'},
+fil:{n:'Fil',c:'#9aa5b1',s:E(48,55,30,22)+C(78,46,15)+E(68,50,9,15,'#7d8795')+L('M88 52Q99 70 88 90',9)+R(26,70,10,22)+R(58,70,10,22),hl:[92,72,22],h2:'Bu hayvanın çok uzun bir burnu var.',h3:'Bu hayvan çok büyüktür ve hortumuyla su içer.',r:'Çünkü hortumu var.'},
+zurafa:{n:'Zürafa',c:'#ffc857',s:E(38,68,22,12)+P('50,64 60,64 70,22 60,22')+E(68,16,10,6)+L('M64 10V3M70 10V3',2,K)+R(22,75,5,20)+R(48,75,5,20)+C(32,66,3,'#a0522d')+C(44,70,3,'#a0522d')+C(62,40,2.5,'#a0522d'),hl:[64,40,26],h2:'Bu hayvanın boynu çok uzun.',h3:'Bu hayvan yüksek ağaçların yapraklarını yer.',r:'Çünkü boynu çok uzun.'},
+kelebek:{n:'Kelebek',c:'#e5698b',s:E(31,38,22,18)+E(69,38,22,18)+E(35,66,16,14,'#ffb703')+E(65,66,16,14,'#ffb703')+R(47,28,6,46,K)+L('M48 30Q40 12 34 10M52 30Q60 12 66 10',2,K),hl:[50,40,32],h2:'Bu canlının büyük kanatları ve ince bir anteni var.',h3:'Bu canlı renkli kanatlarıyla çiçekten çiçeğe konar.',r:'Çünkü kanatları büyük ve renkli.'},
+kaplumbaga:{n:'Kaplumbağa',c:'#6a994e',s:F('M12 68A38 38 0 0 1 88 68Z')+C(92,62,8,'#a7c957')+R(26,66,12,16,'#a7c957')+R(60,66,12,16,'#a7c957')+P('12,66 2,72 12,72','#a7c957')+F('M30 60A22 22 0 0 1 70 60Z','#8ab35a'),hl:[50,48,28],h2:'Bu hayvanın sırtında yuvarlak bir kabuk var.',h3:'Bu hayvan yavaş yürür ve kabuğuna saklanır.',r:'Çünkü sırtında kabuk var.'},
+maymun:{n:'Maymun',c:'#a47148',s:E(45,62,16,22)+C(48,26,12)+C(34,26,6)+C(62,26,6)+E(48,30,8,6,'#f1c27d')+L('M60 82C90 90 94 58 82 50',5)+R(33,78,8,14)+R(50,78,8,14)+L('M32 54L14 70M58 54L76 40',5),hl:[82,64,22],h2:'Bu hayvanın uzun, kıvrık bir kuyruğu var.',h3:'Bu hayvan ağaçlara tırmanmayı ve muz yemeyi sever.',r:'Çünkü kuyruğu uzun ve kıvrık.'},
+fare:{n:'Fare',c:'#a8a8b3',s:E(45,66,22,14)+E(70,62,12,9)+P('78,54 97,63 78,71')+C(63,48,9)+L('M24 68Q4 62 10 40',2.5)+R(32,76,6,14)+R(52,76,6,14),hl:[64,48,18],h2:'Bu hayvanın yuvarlak kulakları ve ince, uzun bir kuyruğu var.',h3:'Bu hayvan küçüktür ve peyniri sever.',r:'Çünkü kulakları yuvarlak, kuyruğu ince.'},
+yarasa:{n:'Yarasa',c:'#7b5ea7',s:E(50,52,7,14)+C(50,32,8)+P('44,28 43,15 50,26')+P('56,28 57,15 50,26')+F('M43 48Q20 18 3 36Q12 38 14 50Q22 44 28 56Q36 52 43 62Z')+`<g transform="translate(100 0) scale(-1 1)">${F('M43 48Q20 18 3 36Q12 38 14 50Q22 44 28 56Q36 52 43 62Z')}</g>`,hl:[50,42,32],h2:'Bu hayvanın deriden geniş kanatları ve sivri kulakları var.',h3:'Bu hayvan geceleri uçar.',r:'Çünkü kanatları geniş ve sivri.'},
+semsiye:{n:'Şemsiye',c:'#e63946',s:F('M8 52A42 42 0 0 1 92 52Q81 43 71 52Q60 43 50 52Q40 43 29 52Q19 43 8 52Z')+L('M50 50V82Q50 94 38 90',5,K),hl:[50,34,26],h2:'Bu nesnenin yuvarlak bir üstü ve kıvrık bir sapı var.',h3:'Bu nesne yağmurda ıslanmamak için açılır.',r:'Çünkü kıvrık sapı ve yuvarlak üstü var.'},
+anahtar:{n:'Anahtar',c:'#e9b824',s:O(24,50,13,8)+R(36,46,54,8)+R(70,54,7,13)+R(82,54,7,9),hl:[78,56,20],h2:'Bu nesnenin dişleri ve yuvarlak bir ucu var.',h3:'Bu nesne kapıyı açmak için kullanılır.',r:'Çünkü dişleri var.'},
+makas:{n:'Makas',c:'#d62828',s:P('50,50 90,14 95,22 57,55','#adb5bd')+P('50,50 90,86 95,78 57,45','#adb5bd')+O(20,30,12,6)+O(20,70,12,6)+L('M28 38L52 50M28 62L52 50',6),hl:[76,50,28],h2:'Bu nesnenin iki keskin ağzı ve iki halkası var.',h3:'Bu nesne kâğıt kesmek için kullanılır.',r:'Çünkü iki ağzı ve iki halkası var.'},
+bardak:{n:'Bardak',c:'#4895ef',s:P('26,22 70,22 64,88 32,88')+L('M70 38Q92 40 90 58Q88 72 66 68',6)+P('29,40 68,40 66,50 31,50','#bde0fe'),hl:[82,54,20],h2:'Bu nesnenin içi boş ve yan tarafında kulp var.',h3:'Bu nesneyle su içeriz.',r:'Çünkü yanında kulp var.'},
+top:{n:'Top',c:'#ff595e',s:C(50,50,36)+F('M18 36Q50 56 82 36A36 36 0 0 0 18 36Z',W)+C(50,50,8,'#ffca3a'),hl:[50,50,36],h2:'Bu nesne her yerinden yuvarlak.',h3:'Bu nesne yuvarlanır ve ona vurup oynarız.',r:'Çünkü her yerinden yuvarlak.'},
+sandalye:{n:'Sandalye',c:'#c07a3a',s:R(26,8,9,50)+R(26,50,52,9)+R(68,58,8,34)+R(26,58,8,34)+R(38,18,5,28)+R(50,18,5,28),hl:[32,30,26],h2:'Bu nesnenin bir sırtlığı ve dört ayağı var.',h3:'Bu nesnenin üstüne otururuz.',r:'Çünkü sırtlığı ve ayakları var.'},
+cekic:{n:'Çekiç',c:'#8d99ae',s:R(44,30,11,62,'#a0662c')+R(20,12,58,20)+P('78,16 97,28 78,31'),hl:[50,22,26],h2:'Bu nesnenin uzun bir sapı ve ağır bir başı var.',h3:'Bu nesneyle çivi çakılır.',r:'Çünkü ağır bir başı ve uzun sapı var.'},
+saat:{n:'Saat',c:'#06d6a0',s:C(50,57,30)+C(27,24,9,'#ffd166')+C(73,24,9,'#ffd166')+P('32,82 22,95 36,89')+P('68,82 78,95 64,89')+C(50,57,23,W)+L('M50 57V40M50 57L62 62',3,K),hl:[50,24,30],h2:'Bu nesnenin üstünde iki küçük zil var.',h3:'Bu nesne zamanı gösterir ve çalar.',r:'Çünkü üstünde zilleri var.'}};
+const W1=['tavsan','kedi','kopek','balik','kus','fil','zurafa','kelebek','kaplumbaga','maymun'],W2=['semsiye','anahtar','makas','bardak','top','sandalye','cekic','saat'];
+const QS={1:W1.map(a=>({a,p:W1})),2:W2.map(a=>({a,p:W2})),
+3:[['tavsan','fare','kedi'],['kedi','kopek','fare'],['kopek','kedi','maymun'],['kus','kelebek','yarasa'],['kelebek','kus','yarasa'],['top','saat','bardak'],['anahtar','cekic','makas'],['fil','zurafa','kaplumbaga']].map(o=>({a:o[0],o}))};
+const WN={1:['Ormanın Hayvanları','hayvana'],2:['Gizemli Nesneler','nesneye'],3:['Benzer Gölgelerin Gizemi','şeye']};
+const BADGES=[['Dikkatli Gözlemci','İlk denemede 5 doğru',s=>s.f>=5],['İpucu Avcısı','İpuçlarını 3 kez kullandı',s=>s.h+s.r>=3],['Gölge Uzmanı','Dünya 1 tamam',s=>s.d[1]],['Mantık Dedektifi','5 gerekçe seçti',s=>s.ro>=5],['Büyük Dedektif','Üç dünya tamam',s=>s.d[1]&&s.d[2]&&s.d[3]]];
+const GOOD=['Harika dedektif! Doğru hayvanı ya da nesneyi buldun.','Süper! İpuçlarını çok iyi kullandın.','Bravo! Dikkatle baktığın için buldun.'];
+const SOFT=['Güzel bir tahmin! Bir ipucuna daha bakalım.','Olabilir ama başka bir ipucu var. Birlikte bakalım.','İyi denedin! Gölgeyi yeniden inceleyelim.'];
+const DET=`<svg viewBox="0 0 80 92" aria-hidden="true"><rect x="20" y="72" width="40" height="18" rx="8" fill="#3a6ea5"/><circle cx="40" cy="52" r="22" fill="#ffd8b5"/><ellipse cx="40" cy="34" rx="31" ry="6" fill="#7b4b2a"/><rect x="22" y="12" width="36" height="22" rx="9" fill="#8d5a34"/><circle cx="32" cy="52" r="2.6" fill="#333"/><circle cx="48" cy="52" r="2.6" fill="#333"/><path d="M32 62Q40 69 48 62" stroke="#c0392b" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="62" cy="66" r="10" fill="#fff8" stroke="#555" stroke-width="3"/><path d="M69 74L78 87" stroke="#555" stroke-width="4" stroke-linecap="round"/></svg>`;
+/* ===== DURUM ===== */
+const KEY='gizemliGolgeDedektifleri_v1';
+const fresh=()=>({t:0,f:0,h:0,r:0,ro:0,rt:0,d:{1:false,2:false,3:false},snd:true});
+let S;try{S=Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=fresh()}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let G=null,cur='';
+const $=s=>document.querySelector(s),pick1=a=>a[Math.random()*a.length|0];
+const sh=a=>{a=[...a];for(let i=a.length;i>1;){const j=Math.random()*i--|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+/* ===== SES ===== */
+let ac;function tone(f,t=0){if(!S.snd)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.07;o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.16)}catch(e){}}
+function speak(t){if(!S.snd||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='tr-TR';u.rate=.9;speechSynthesis.speak(u)}catch(e){}}
+function snd(){S.snd=!S.snd;save();if(!S.snd)try{speechSynthesis.cancel()}catch(e){}view()}
+const sb=()=>`<button class="btn s" onclick="snd()" aria-label="Sesi aç veya kapat">Ses: ${S.snd?'Açık':'Kapalı'}</button>`;
+/* ===== ÇİZİM ===== */
+function sv(id,m,ring){const it=I[id];let vb='0 0 100 100';if(m==='z'){const[x,y,r]=it.hl;vb=`${x-r} ${y-r} ${2*r} ${2*r}`}
+const rg=ring?`<circle class="ring" cx="${it.hl[0]}" cy="${it.hl[1]}" r="${it.hl[2]}" fill="none" stroke="#ff9f1c" stroke-width="2.5" stroke-dasharray="5 4"/>`:'';
+return`<svg viewBox="${vb}" class="${m==='c'?'':'sh'}" role="img" aria-label="${m==='c'?it.n:'Gölge'}">${it.s.replaceAll('@',it.c)}${rg}</svg>`}
+function go(h){$('#app').innerHTML=h;scrollTo(0,0)}
+const bd=()=>BADGES.map(b=>`<span class="bd ${b[2](S)?'':'lk'}" title="${b[1]}"><b>★ ${b[0]}</b><br><small>${b[1]}</small></span>`).join('');
+/* ===== EKRANLAR ===== */
+function view(){({welcome,menu,worlds,game,teacher}[cur]||welcome)()}
+function welcome(){cur='welcome';go(`<div class="top"><span></span>${sb()}</div><h1>Gizemli Gölge Dedektifleri</h1><div style="width:140px;margin:auto">${DET}</div><p class="q">Merhaba küçük dedektif!<br>Ormandaki hayvanların gölgeleri birbirine karıştı. Bize yardım eder misin?</p><p class="note">İyi bir dedektif acele etmez. Dikkatlice inceler, ipuçlarını kullanır ve tahminini gerektiğinde değiştirir.</p><button class="btn g" onclick="menu();speak('Haydi gölgeyi inceleyelim!')">Başla</button>`);}
+function menu(){cur='menu';go(`<div class="top"><span></span>${sb()}</div><h1>Ana Menü</h1><div style="width:110px;margin:auto">${DET}</div><button class="btn g" onclick="worlds()">Oyuna Başla</button><br><button class="btn b" onclick="teacher()">Öğretmen Paneli</button><br><button class="btn s" onclick="resetAll()">Baştan Başla</button>`)}
+function worlds(){cur='worlds';go(`<div class="top"><button class="btn s" onclick="menu()">Ana Menü</button>${sb()}</div><h2>Bir dünya seç</h2><div class="wrow">${[1,2,3].map(w=>`<div class="w"><h2>Dünya ${w}</h2><b>${WN[w][0]}</b><div style="margin:8px">${sv(QS[w][0].a,'c')}</div><div>${QS[w].length} soru ${S.d[w]?'· Tamamlandı ✓':''}</div><button class="btn g" onclick="start(${w})">Oyna</button></div>`).join('')}</div><h2>Rozetlerim</h2>${bd()}`)}
+function start(w){const qs=sh(QS[w]).map(q=>({...q,o:sh(q.o||[q.a,...sh(q.p.filter(x=>x!==q.a)).slice(0,2)])}));
+G={w,qs,i:0};qn();cur='game';game();speak('Sence bu hangi '+(w===2?'nesne':'hayvan')+'?')}
+function qn(){G.i=G.i||0;Object.assign(G,{stage:0,wrong:[],lock:false,zoom:false,used:false,done:false,rs:null,rdone:false,rcount:false,msg:'Gölgeyi dikkatle incele. Sence bu ne?',off:[]})}
+function game(){const q=G.qs[G.i],it=I[q.a];cur='game';
+const opts=G.rs?`<div class="rs"><p class="q">Neden ${it.n.toLowerCase()} seçtin?</p>${G.rs.map((r,k)=>`<button class="btn ${G.rdone&&r===it.r?'ok':''}" onclick="rsPick(${k})" ${G.rdone?'disabled':''}>${r}</button>`).join('')}${G.rdone?`<button class="btn g" onclick="next()">${G.i+1>=G.qs.length?'Bölümü bitir':'Devam'}</button>`:''}</div>`:
+`<div class="opts">${q.o.map((id,k)=>`<button class="opt ${G.off.includes(id)?'off':''}" onclick="pick('${id}')" ${G.off.includes(id)||G.lock?'disabled':''} aria-label="${k+1}. seçenek ${I[id].n}">${sv(id,'c')}${k+1}. ${I[id].n}</button>`).join('')}</div>
+<div><button class="btn b" onclick="hint()" ${G.lock?'disabled':''}>İpucu</button><button class="btn b" onclick="lens()" ${G.lock?'disabled':''}>Dedektif Merceği</button>${G.lock?`<button class="btn g" onclick="rethink()">Tahminimi değiştiriyorum</button>`:''}</div>`;
+go(`<div class="top"><button class="btn s" onclick="home()">Ana Menü</button><span class="prog">Dünya ${G.w} · ${G.i+1} / ${G.qs.length}</span>${sb()}</div>
+<div class="stage"><div class="card">${G.rdone||G.rs?sv(q.a,'c'):sv(q.a,G.zoom?'z':'s',G.stage>0&&!G.zoom)}</div><div class="det">${DET}<div class="say" aria-live="polite">${G.msg}</div></div></div>
+<p class="q">Bu gölge hangi ${WN[G.w][1]==='şeye'?'canlıya ya da nesneye':WN[G.w][1]} ait?</p>${opts}`)}
+function home(){if(confirm('Ana menüye dönmek istiyor musun? İlerlemen kaydedildi.'))menu()}
+function say(m){G.msg=m;speak(m)}
+function hint(){if(G.done)return;G.used=true;G.stage=Math.min(G.stage+1,2);const q=G.qs[G.i],it=I[q.a];say(G.stage===1?(q.h2||it.h2):(q.h3||it.h3));game()}
+function lens(){if(G.done)return;G.used=true;G.zoom=!G.zoom;say(G.zoom?'Mercekle gölgenin önemli bir parçasına baktın. Ne görüyorsun?':'Gölgenin tamamına yeniden bak.');game()}
+function rethink(){G.lock=false;say('Tahminini yeniden düşünebilirsin.');game()}
+function pick(id){if(G.lock||G.done)return;const q=G.qs[G.i],it=I[q.a];
+if(id===q.a){G.done=true;S.t++;const k=G.wrong.length?'r':G.used?'h':'f';S[k]++;save();tone(523);tone(659,.15);tone(784,.3);
+const pool=Object.keys(I).filter(x=>!q.o.includes(x)).map(x=>I[x].r).filter((v,i,a)=>a.indexOf(v)===i&&v!==it.r);
+G.rs=sh([it.r,...sh(pool).slice(0,2)]);G.zoom=false;G.msg=pick1(GOOD)+' Şimdi seçimini açıklayalım.';speak(G.msg);game()}
+else{G.wrong.push(id);G.off.push(id);G.stage=Math.min(G.stage+1,2);G.lock=true;tone(330);G.zoom=false;
+say(pick1(SOFT)+' '+(G.stage===1?(q.h2||it.h2):(q.h3||it.h3)));game()}}
+function rsPick(k){if(G.rdone)return;const it=I[G.qs[G.i].a];if(!G.rcount){G.rcount=true;S.rt++;G.first=true}else G.first=false;
+if(G.rs[k]===it.r){if(G.first)S.ro++;G.rdone=true;save();tone(660);say('Harika! İpuçlarını çok iyi kullandın.')}else{tone(330);say('Güzel düşündün! Bir daha bakalım, hangisi gölgeye uyuyor?')}game()}
+function next(){G.i++;if(G.i>=G.qs.length)return done();qn();game();speak('Sence bu ne?')}
+function done(){const w=G.w;S.d[w]=true;save();const all=S.d[1]&&S.d[2]&&S.d[3];cur='done';
+go(`<h1>${all?'Büyük Dedektif Oldun!':'Bölüm Tamam!'}</h1><div style="width:130px;margin:auto">${DET}</div><p class="q">Harika çalıştın! İpuçlarını inceleyerek yeni şeyler öğrendin.</p>${bd()}<div>${w<3?`<button class="btn g" onclick="start(${w+1})">Sonraki dünya</button>`:''}<button class="btn b" onclick="worlds()">Dünyalar</button>${all?`<button class="btn" onclick="teacher()">Öğretmen paneli</button>`:''}<button class="btn s" onclick="menu()">Ana Menü</button></div>`);speak('Harika çalıştın! İpuçlarını inceleyerek yeni şeyler öğrendin.')}
+function teacher(){cur='teacher';const n=Object.keys(S.d).filter(k=>S.d[k]).length;
+go(`<div class="top"><button class="btn s" onclick="menu()">Ana Menü</button>${sb()}</div><h2>Öğretmen Paneli</h2><table><tr><td>Oynanan soru sayısı</td><td><b>${S.t}</b></td></tr><tr><td>İlk denemede doğru</td><td><b>${S.f}</b></td></tr><tr><td>İpucu kullanarak çözülen</td><td><b>${S.h}</b></td></tr><tr><td>Tahminini gözden geçirip çözülen</td><td><b>${S.r}</b></td></tr><tr><td>Gerekçeyi ilk seçişte doğru</td><td><b>${S.ro} / ${S.rt}</b></td></tr><tr><td>Tamamlanan dünyalar</td><td><b>${n} / 3</b> (${[1,2,3].map(w=>`D${w}: ${S.d[w]?'✓':'–'}`).join(', ')})</td></tr></table>
+<p class="note">İpucu kullanmak ve tahmini değiştirmek olumlu öğrenme davranışlarıdır. Bu veriler tek başına çocuğun bilişsel yeterliliği için kesin yargı oluşturmaz; yalnızca gözlemlerinizi desteklemek içindir. Veriler yalnızca bu cihazın tarayıcısında saklanır, hiçbir yere gönderilmez.</p><button class="btn b" onclick="worlds()">Dünyalara git</button><button class="btn s" onclick="resetAll()">Verileri sıfırla</button>`)}
+function resetAll(){if(confirm('Tüm ilerleme ve sonuçlar silinecek. Emin misin?')){const s=S.snd;S=fresh();S.snd=s;save();menu()}}
+document.addEventListener('keydown',e=>{if(cur==='game'&&G&&!G.rs&&['1','2','3'].includes(e.key)){const id=G.qs[G.i].o[e.key-1];if(id&&!G.off.includes(id))pick(id)}});
+welcome();
+</script></body></html>
