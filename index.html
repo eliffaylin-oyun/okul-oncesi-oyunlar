@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kayıp Parçanın Peşinde – Minik Mucitler</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#33415c;background:linear-gradient(160deg,#d7f0ff,#fff6d6 55%,#e6defa);font-size:clamp(16px,2.3vw,22px)}
+#app{max-width:920px;margin:0 auto;padding:12px 14px 40px;text-align:center}
+h1{font-size:clamp(28px,6vw,50px);margin:8px 0;color:#5a4fcf}h2{margin:6px 0;color:#5a4fcf}
+.btn{font:inherit;font-weight:700;border:0;border-radius:999px;padding:.6em 1.5em;margin:5px;background:#ff9f1c;color:#fff;box-shadow:0 5px 0 #c97800;cursor:pointer;min-height:50px}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #c97800}.btn:disabled{opacity:.5}
+.btn.g{background:#2ec4b6;box-shadow:0 5px 0 #1a8d82}.btn.b{background:#6c7ae0;box-shadow:0 5px 0 #4553b8}.btn.s{background:#9aa5b8;box-shadow:0 5px 0 #6c778c;font-size:.8em;min-height:42px}.btn.on{outline:4px solid #5a4fcf}
+.btn:focus-visible,.pc:focus-visible{outline:4px solid #5a4fcf;outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.prog{background:#fffa;border-radius:999px;padding:6px 16px;font-weight:700}
+.card{background:#fff;border:5px solid #ffd166;border-radius:28px;width:min(86vw,380px);margin:8px auto;padding:6px;touch-action:none}
+.card svg{width:100%;display:block}
+.hole *{fill:#fff9;stroke:#8d99ae;stroke-width:1.3;stroke-dasharray:3 2}
+.pop{animation:pop .8s ease 2;transform-origin:50px 50px}@keyframes pop{50%{transform:scale(1.07)}}
+.shake{animation:sk .4s}@keyframes sk{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.say{background:#fff;border:3px solid #6c7ae0;border-radius:20px;padding:10px 14px;max-width:560px;margin:6px auto;font-weight:600}
+.pcs{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:10px 0}
+.pc{background:#fff;border:4px solid #a8dadc;border-radius:22px;padding:6px;width:min(26vw,120px);min-width:84px;cursor:grab;touch-action:none;user-select:none;animation:fi .4s}
+.pc svg{width:100%;height:84px;display:block;pointer-events:none}.pc.sel{border-color:#ff9f1c;background:#fff4d9}.pc.off{opacity:.35}
+@keyframes fi{from{transform:translateY(14px);opacity:0}}
+.drag{position:fixed;z-index:9;pointer-events:none;opacity:.9;transform:translate(-50%,-50%) scale(1.15)}
+.w{display:inline-block;background:#fff;border-radius:22px;padding:12px;width:200px;margin:6px;border:4px solid #c3b8f5;vertical-align:top}
+.bd{display:inline-block;background:#fff;border:3px solid #ffd166;border-radius:14px;padding:6px 10px;margin:3px;font-size:.8em}.bd.lk{opacity:.35;filter:grayscale(1)}
+table{margin:8px auto;border-collapse:collapse;background:#fff;border-radius:12px;text-align:left}td{padding:7px 14px;border-bottom:1px solid #ddd}
+.note{font-size:.8em;max-width:620px;margin:8px auto}
+</style></head><body><div id="app"></div>
+<script>
+/* ===== ÇİZİM YARDIMCILARI (100x100 koordinat) ===== */
+const E=(x,y,a,b,f)=>`<ellipse cx="${x}" cy="${y}" rx="${a}" ry="${b}" fill="${f}"/>`,C=(x,y,r,f)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${f}"/>`,
+R=(x,y,w,h,f)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${f}"/>`,P=(p,f)=>`<polygon points="${p}" fill="${f}"/>`,
+F=(d,f)=>`<path d="${d}" fill="${f}"/>`,L=(d,w,s)=>`<path d="${d}" stroke="${s}" stroke-width="${w}" stroke-linecap="round" fill="none"/>`,
+O=(x,y,r,w,s)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${s}" stroke-width="${w}"/>`;
+const K='#333';
+/* ===== PARÇALAR: k=kategori (yanlış seçenekler başka kategoriden gelir, böylece cevap tek ve nettir), b=sınır kutusu, f=biçimsel ipucu, u=işlevsel ipucu ===== */
+const PR={},OB={};
+const pt=(id,k,b,s,f,u)=>PR[id]={k,b,s,f,u};
+pt('baca','baca',[68,20,10,22],R(68,20,10,22,'#b56576'),'Bu parça çatının üstünde duran dar bir dikdörtgen olabilir.','Evde sobanın dumanı nereden çıkar?');
+pt('cati','ucgen',[14,15,72,32],P('14,47 50,15 86,47','#e76f51'),'Bu parça üç köşeli olabilir.','Yağmurdan korunmak için evin hangi bölümü gerekir?');
+pt('kapi','kapi',[43,64,16,26],R(43,64,16,26,'#8d5a34')+C(55,77,1.6,'#ffd166'),'Eksik parça uzun bir dikdörtgen gibi.','Eve girmek için hangi parça gerekir?');
+pt('pencere','kare',[26,54,14,14],R(26,54,14,14,'#8ecae6')+L('M33 54V68M26 61H40',1.4,'#fff'),'Bu parça dört kenarlı ve kare gibi.','Evin içine ışık girmesi için ne gerekir?');
+pt('cit','cit',[82,74,12,16],R(82,74,4,16,'#c9a227')+R(89,74,4,16,'#c9a227'),'Bu parça yan yana dik çubuklardan oluşuyor.','Bahçeyi korumak için ne gerekir?');
+pt('merdiven','basamak',[8,78,14,12],R(8,86,14,4,'#a98467')+R(12,82,10,4,'#a98467')+R(16,78,6,4,'#a98467'),'Bu parça basamak basamak yükseliyor.','Yüksekteki bir yere çıkmak için ne kullanırız?');
+pt('tekB','tekerlek',[9,54,32,32],O(25,70,14,4,K)+C(25,70,2,K),'Eksik parça yuvarlak, kenarı halka gibi.','Bisikletin hareket etmesi için hangi parçalara ihtiyacı var?');
+pt('tekA','tekerlek',[18,60,24,24],C(30,72,10,K)+C(30,72,4,'#ddd'),'Eksik parça yuvarlak ve siyah.','Arabanın yolda gitmesi için hangi parça gerekir?');
+pt('vagon','vagon',[50,48,40,36],R(50,48,38,26,'#4895ef')+R(55,53,8,8,'#fff')+R(68,53,8,8,'#fff')+C(58,78,5,K)+C(78,78,5,K),'Bu parça uzun bir kutu gibi ve altında tekerlekleri var.','Trenin yolcu taşıması için hangi bölüm gerekir?');
+pt('kanatU','kanat',[45,20,28,28],P('45,48 60,48 74,20 62,20','#e63946'),'Bu parça yana doğru uzanan sivri bir şekil.','Uçağın havada kalması için hangi parça gerekir?');
+pt('yelken','yelken',[52,18,32,40],P('52,18 52,56 84,56','#ff9f1c'),'Bu parça üç köşeli ve büyük.','Geminin rüzgârla ilerlemesi için hangi parça gerekir?');
+pt('tekT','tekerlek',[12,48,40,40],C(32,68,19,K)+C(32,68,8,'#bbb'),'Eksik parça büyük, yuvarlak ve kalın.','Traktör çamurlu tarlada ilerlemek için neye ihtiyaç duyar?');
+pt('kanatK','kanat',[48,18,46,40],E(70,38,22,18,'#e5698b'),'Kelebeğin iki yanı birbirine benzer. Bu parça diğer kanadın eşi.','Kelebeğin iki tarafında hangi parçalar bulunur?');
+pt('kulak','kulak',[66,2,16,36],E(74,20,5,16,'#c9b8a8'),'Bu parça uzun ve ince, yukarı doğru uzanıyor.','Tavşan sesleri duymak için hangi parçasını kullanır?');
+pt('yuzgec','yuzgec',[36,12,26,24],P('38,32 50,14 60,33','#0096c7'),'Bu parça balığın sırtında duran üçgen gibi.','Balık suda yüzmek için hangi parçasını kullanır?');
+pt('kanatS','kanat',[12,26,48,26],P('38,50 14,28 58,48','#2a9df4'),'Bu parça geniş ve yan tarafa açılıyor.','Kuş uçmak için hangi parçasını çırpar?');
+pt('hortum','hortum',[78,48,22,46],L('M88 52Q99 70 88 90',9,'#9aa5b1'),'Bu parça uzun ve kıvrık bir çizgi gibi.','Fil su içmek için hangi parçasını kullanır?');
+pt('kabuk','kabuk',[10,28,80,42],F('M12 68A38 38 0 0 1 88 68Z','#6a994e')+F('M30 60A22 22 0 0 1 70 60Z','#8ab35a'),'Bu parça yarım daire gibi.','Kaplumbağa tehlikede nereye saklanır?');
+pt('kol','kol',[12,40,24,12],R(14,42,20,8,'#457b9d'),'Eksik parça uzun ve ince, yana uzanıyor.','Robot nesneleri tutmak için hangi parçayı kullanır?');
+pt('bacak','bacak',[38,70,12,22],R(40,72,8,18,'#457b9d'),'Bu parça dik ve uzun.','Robot yürümek için ne kullanır?');
+pt('anten','anten',[44,1,12,20],L('M50 20V8',2.4,K)+C(50,7,4,'#e63946'),'Bu parça ince bir çubuk ve ucunda yuvarlak var.','Robot sinyal almak için hangi parçayı kullanır?');
+pt('bas','bas',[34,16,32,24],R(36,18,28,20,'#ffd166')+C(44,28,3,K)+C(56,28,3,K),'Bu parça kare gibi ve üzerinde iki göz var.','Robot görmek için hangi parçaya ihtiyaç duyar?');
+pt('el','el',[4,38,16,16],C(12,46,6,'#e63946'),'Bu parça küçük ve yuvarlak.','Robot bir şeyi tutarken hangi parçasını kullanır?');
+pt('ayak','ayak',[34,86,20,8],R(36,88,16,6,'#e63946'),'Bu parça yere basan geniş ve kısa bir çizgi.','Robot dengede durmak için neye ihtiyaç duyar?');
+OB.ev={n:'ev',base:R(20,45,60,45,'#ffe0a3'),parts:['baca','cati','kapi','pencere','cit','merdiven']};
+OB.bisiklet={n:'bisiklet',base:L('M25 70L45 50L65 70M45 50L70 45M70 45L75 70',3,'#e63946')+O(75,70,14,4,K),parts:['tekB']};
+OB.araba={n:'araba',base:R(10,50,80,20,'#ffb703')+P('28,50 38,32 66,32 76,50','#ffb703')+R(40,36,22,12,'#cdeefd')+C(72,72,10,K)+C(72,72,4,'#ddd'),parts:['tekA']};
+OB.tren={n:'tren',base:R(8,45,34,29,'#e76f51')+R(12,36,14,10,'#e76f51')+C(18,78,5,K)+C(34,78,5,K),parts:['vagon']};
+OB.ucak={n:'uçak',base:E(50,50,40,9,'#ced4da')+P('12,48 4,30 22,46','#e63946')+P('45,52 60,52 74,80 62,80','#e63946'),parts:['kanatU']};
+OB.gemi={n:'gemi',base:P('15,60 85,60 75,80 25,80','#6c4a2b')+L('M50 60V15',3,K),parts:['yelken']};
+OB.traktor={n:'traktör',base:R(30,40,40,25,'#2d9c5a')+R(52,26,18,16,'#2d9c5a')+C(72,76,9,K),parts:['tekT']};
+OB.kelebek={n:'kelebek',base:E(31,38,22,18,'#e5698b')+E(35,66,16,14,'#ffb703')+E(65,66,16,14,'#ffb703')+R(47,28,6,46,K),parts:['kanatK']};
+OB.tavsan={n:'tavşan',base:E(45,68,25,18,'#c9b8a8')+C(68,48,14,'#c9b8a8')+E(62,18,5,17,'#c9b8a8')+C(20,66,7,'#fff')+R(34,80,8,12,'#c9b8a8')+R(52,80,8,12,'#c9b8a8'),parts:['kulak']};
+OB.balik={n:'balık',base:E(45,50,32,20,'#48cae4')+P('74,50 97,30 97,70','#48cae4')+C(26,45,3,K),parts:['yuzgec']};
+OB.kus={n:'kuş',base:E(50,55,22,16,'#4cc9f0')+C(72,40,10,'#4cc9f0')+P('80,37 95,43 80,47','#ffb703')+P('30,60 6,66 28,70','#4cc9f0')+L('M46 70V88M56 70V88',3,K),parts:['kanatS']};
+OB.fil={n:'fil',base:E(48,55,30,22,'#9aa5b1')+C(78,46,15,'#9aa5b1')+E(68,50,9,15,'#7d8795')+R(26,70,10,22,'#9aa5b1')+R(58,70,10,22,'#9aa5b1'),parts:['hortum']};
+OB.kaplumbaga={n:'kaplumbağa',base:C(92,62,8,'#a7c957')+R(26,66,12,16,'#a7c957')+R(60,66,12,16,'#a7c957'),parts:['kabuk']};
+OB.robot={n:'robot',base:R(35,38,30,34,'#a8dadc')+C(50,55,5,'#e63946')+R(66,42,20,8,'#457b9d')+C(88,46,6,'#e63946')+R(52,72,8,18,'#457b9d')+R(50,88,16,6,'#e63946'),parts:['anten','bas','kol','el','bacak','ayak']};
+/* ===== GÖREVLER (öğretmen yeni görev ekleyebilir) =====
+ ty yok: eksik parça (o=nesne, m=eksik parça) | ty:'odd': uygun olmayan parça (f=yabancı parça) | ty:'pat': örüntü (seq, son harf eksik) */
+const WD=[['Minik Evler','#ffb703'],['Hareketli Araçlar','#4895ef'],['Canlıların Dünyası','#2ec4b6'],['Robot Atölyesi','#e76f51'],['Gizemli Parçalar','#9b5de5']];
+const T=[[['ev','cati'],['ev','kapi'],['ev','pencere'],['ev','baca'],['ev','cit'],['ev','merdiven']],
+[['bisiklet','tekB'],['araba','tekA'],['tren','vagon'],['ucak','kanatU'],['gemi','yelken'],['traktor','tekT']],
+[['kelebek','kanatK'],['tavsan','kulak'],['balik','yuzgec'],['kus','kanatS'],['fil','hortum'],['kaplumbaga','kabuk']],
+[['robot','kol'],['robot','bacak'],['robot','anten'],['robot','bas'],['robot','el'],['robot','ayak']]]
+.map((w,i)=>w.map((x,j)=>({id:`${i+1}.${j+1}`,w:i+1,o:x[0],m:x[1]})));
+T.push([{o:'ev',f:'tekB'},{o:'robot',f:'yelken'},{o:'ev',f:'kanatS'},{seq:'ababab'},{seq:'aabaab'},{seq:'abcabc'}].map((x,j)=>({id:`5.${j+1}`,w:5,ty:x.seq?'pat':'odd',...x})));
+const TK={a:x=>C(x+6,50,6,'#e63946'),b:x=>R(x,44,12,12,'#3a86ff'),c:x=>P(`${x},56 ${x+12},56 ${x+6},44`,'#ffc300'),d:x=>C(x+6,50,6,'#2d9c5a')};
+const BADGES=[['Parça Avcısı','5 görev',s=>s.t>=5],['Dikkatli Gözlemci','İlk seçimde 3 doğru',s=>s.f>=3],['Şekil Uzmanı','Minik Evler tamam',s=>wd(s,1)],['İpucu Ustası','İpucuyla 3 görev',s=>s.h+s.r>=3],['Minik Mucit','4 dünya tamam',s=>[1,2,3,4,5].filter(w=>wd(s,w)).length>=4],['Büyük Tamamlayıcı','5 dünya tamam',s=>[1,2,3,4,5].every(w=>wd(s,w))]];
+const wd=(s,w)=>T[w-1].every(t=>s.dn[t.id]);
+const REASON=['Çünkü şekli uygun.','Çünkü bu parça nesnenin işlevini tamamlıyor.','Çünkü diğer parçalar buraya uymuyor.'];
+const GOOD=['Harika gözlem yaptın!','Bu parçanın şekline çok dikkat ettin.','Nesneyi tamamladın, minik mucit!'];
+const MIS=['Güzel bir deneme! Yeni bir ipucuna bakalım.','Birlikte düşünmeye devam edelim.','Olabilir ama bu parça buraya uymadı. İpucuna bakalım.'];
+const MUCIT=`<svg viewBox="0 0 80 90" aria-hidden="true"><rect x="20" y="70" width="40" height="18" rx="8" fill="#6c7ae0"/><circle cx="40" cy="48" r="22" fill="#ffd8b5"/><path d="M16 38Q40 6 64 38Z" fill="#ff9f1c"/><rect x="18" y="36" width="44" height="6" rx="3" fill="#c97800"/><circle cx="30" cy="48" r="8" fill="#cdeefd" stroke="#5a4fcf" stroke-width="3"/><circle cx="50" cy="48" r="8" fill="#cdeefd" stroke="#5a4fcf" stroke-width="3"/><circle cx="30" cy="48" r="2.5" fill="#333"/><circle cx="50" cy="48" r="2.5" fill="#333"/><path d="M32 63Q40 70 48 63" stroke="#c0392b" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="68" cy="72" r="8" fill="#9aa5b8"/><circle cx="68" cy="72" r="3" fill="#fff"/></svg>`;
+/* ===== DURUM ===== */
+const KEY='kayipParcaMinikMucitlar_v1',fresh=()=>({t:0,f:0,h:0,r:0,fm:0,fn:0,od:0,rc:0,rs:[0,0,0],dn:{},lv:3,snd:true});
+let S;try{S=Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=fresh()}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let G=null,cur='',dr=null;const $=s=>document.querySelector(s);
+const sh=a=>{a=[...a];for(let i=a.length;i>1;){const j=Math.random()*i--|0;[a[i],a[j]]=[a[j],a[i]]}return a},pk=a=>a[Math.random()*a.length|0];
+/* ===== SES ===== */
+let ac;function tone(f,t=0){if(!S.snd)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.07;o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.15)}catch(e){}}
+function speak(t){if(!S.snd||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='tr-TR';u.rate=.9;speechSynthesis.speak(u)}catch(e){}}
+function snd(){S.snd=!S.snd;save();if(!S.snd)try{speechSynthesis.cancel()}catch(e){}view()}
+const sb=()=>`<button class="btn s" onclick="snd()">Ses: ${S.snd?'Açık':'Kapalı'}</button>`;
+/* ===== GÖREV YARDIMCILARI ===== */
+const ans=t=>t.ty==='pat'?t.seq.slice(-1):t.ty==='odd'?t.f:t.m;
+const SX=i=>6+i*15;
+function hole(t){if(t.ty==='pat')return[SX(5),44,12,12];return PR[t.m].b}
+function scene(t,done){let s='';
+if(t.ty==='pat'){[...t.seq].forEach((c,i)=>{if(i<5||done)s+=(i===5?'<g class="pop">':'<g>')+TK[c](SX(i))+'</g>'})}
+else{const o=OB[t.o];s=o.base+o.parts.filter(p=>t.ty==='odd'||done||p!==t.m).map(p=>p===t.m&&done?`<g class="pop">${PR[p].s}</g>`:PR[p].s).join('')}
+let h='';if(!done&&t.ty!=='odd'){const b=hole(t),g=6;h=t.ty==='pat'?`<rect class="hole" x="${b[0]-1}" y="43" width="14" height="14" rx="3" style="fill:#fff9;stroke:#8d99ae;stroke-dasharray:3 2"/>`:`<g class="hole">${PR[t.m].s}</g>`;h+=`<rect class="hz" x="${b[0]-g}" y="${b[1]-g}" width="${b[2]+2*g}" height="${b[3]+2*g}" fill="transparent" onclick="hzClick()"/>`}
+return`<svg viewBox="0 0 100 100" role="img" aria-label="Eksik parçalı nesne">${s}${h}</svg>`}
+function pieceSvg(t,id){if(t.ty==='pat')return`<svg viewBox="${SX(5)-4} 38 20 24">${TK[id](SX(5))}</svg>`;const b=PR[id].b;return`<svg viewBox="${b[0]-3} ${b[1]-3} ${b[2]+6} ${b[3]+6}">${PR[id].s}</svg>`}
+function mkOpts(t){const n=S.lv,a=ans(t);
+if(t.ty==='pat')return sh([a,...sh(['a','b','c','d'].filter(x=>x!==a)).slice(0,n-1)]);
+if(t.ty==='odd')return sh([t.f,...sh(OB[t.o].parts).slice(0,n-1)]);
+const seen={[PR[t.m].k]:1},pool=[];sh(Object.keys(PR)).forEach(i=>{if(!seen[PR[i].k]){seen[PR[i].k]=1;pool.push(i)}});return sh([t.m,...pool.slice(0,n-1)])}
+function hints(t){if(t.ty==='pat')return['Önce şekillerin sırasına bak. Hangi şekiller tekrar ediyor?','Sıranın başından başla ve sırayla say. Sonra hangi şekil gelir?'];
+if(t.ty==='odd')return['Parçaların hepsi bu nesneye ait mi? Şekillere yakından bak.','Hangi parça başka bir yerde kullanılır? Bu nesnede işe yaramaz.'];return[PR[t.m].f,PR[t.m].u]}
+const task=t=>t.ty==='pat'?'Örüntüyü tamamla: sıradaki şekil hangisi?':t.ty==='odd'?`Bu ${OB[t.o].n} için hangi parça uygun değil?`:`Minik Mucit için ${OB[t.o].n} nesnesinin eksik parçasını bul!`;
+/* ===== EKRANLAR ===== */
+const go=h=>{$('#app').innerHTML=h;scrollTo(0,0)},bd=()=>BADGES.map(b=>`<span class="bd ${b[2](S)?'':'lk'}"><b>★ ${b[0]}</b><br>${b[1]}</span>`).join('');
+function view(){({welcome,menu,game,teacher}[cur]||welcome)()}
+function welcome(){cur='welcome';go(`<div class="top"><span></span>${sb()}</div><h1>Kayıp Parçanın Peşinde</h1><h2>Minik Mucitler</h2><div style="width:150px;margin:auto">${MUCIT}</div><p class="say">Renkli Nesneler Dünyası'nda parçalar kayboldu! Minik Mucit'e yardım eder misin? Her parça her bütüne uymaz. İpuçlarını kullanarak doğru parçayı bulabiliriz.</p><button class="btn g" onclick="menu();speak('Eksik parçayı bul. Haydi başlayalım!')">Macera Başlasın!</button>`)}
+function menu(){cur='menu';go(`<div class="top"><span></span>${sb()}</div><h1>Dünyalar</h1><div>${WD.map((w,i)=>{const n=T[i].filter(t=>S.dn[t.id]).length;return`<div class="w" style="border-color:${w[1]}"><b>Dünya ${i+1}</b><br>${w[0]}<br><span class="prog">${n} / ${T[i].length}${n===T[i].length?' ✓':''}</span><br><button class="btn g" onclick="start(${i+1})">Oyna</button></div>`}).join('')}</div>
+<p><b>Seviye:</b> ${[[2,'Kolay'],[3,'Orta'],[4,'Zor']].map(l=>`<button class="btn s ${S.lv===l[0]?'on':''}" onclick="S.lv=${l[0]};save();menu()">${l[1]} (${l[0]} seçenek)</button>`).join('')}</p><h2>Rozetlerim</h2>${bd()}<p><button class="btn b" onclick="teacher()">Öğretmen Paneli</button><button class="btn s" onclick="resetAll()">Baştan Başla</button></p>`)}
+function start(w){G={w,i:0,run:0,hints:0,done:0};tq();speak(task(T[w-1][0]))}
+function tq(){const t=T[G.w-1][G.i];Object.assign(G,{t,o:mkOpts(t),stage:0,wrong:[],off:[],sel:null,ok:false,used:false,rdone:false,shake:false,msg:task(t)});game()}
+function game(){cur='game';const t=G.t,odd=t.ty==='odd',rq=G.ok&&!G.rdone&&(G.i%3===2||odd);
+const pcs=G.ok?'':G.o.map(id=>`<div class="pc ${G.sel===id?'sel':''} ${G.off.includes(id)?'off':''}" tabindex="0" role="button" aria-label="Parça seçeneği" ${odd?`onclick="answer('${id}')"`:`onpointerdown="pd(event,'${id}')" onpointermove="pm(event)" onpointerup="pu(event)" onpointercancel="pc2()"`} onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${odd?`answer('${id}')`:`G.sel='${id}';game()`}}">${pieceSvg(t,id)}</div>`).join('');
+go(`<div class="top"><button class="btn s" onclick="if(confirm('Ana menüye dönmek istiyor musun? İlerlemen kaydedildi.'))menu()">Ana Menü</button><span class="prog">Dünya ${G.w} · ${G.i+1} / ${T[G.w-1].length}</span>${sb()}</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap"><div style="width:80px">${MUCIT}</div><div class="say" aria-live="polite">${G.msg}</div></div>
+<div class="card ${G.shake?'shake':''}">${scene(t,G.ok)}</div>
+${rq?`<p class="q"><b>Neden bu parçayı seçtin?</b></p>${REASON.map((r,k)=>`<button class="btn b" onclick="why(${k})">${r}</button>`).join('<br>')}`:G.ok?`<button class="btn g" onclick="nextT()">${G.i+1>=T[G.w-1].length?'Dünyayı bitir':'Sonraki görev'}</button>`:`<div class="pcs">${pcs}</div><div><button class="btn b" onclick="hint()">İpucu</button><button class="btn b" onclick="speak(task(G.t))">Dinle</button>${G.sel&&!odd?`<button class="btn g" onclick="place(G.sel)">Parçayı yerleştir</button>`:''}</div>`}`);
+if(G.shake)setTimeout(()=>{G.shake=false},500)}
+function say(m){G.msg=m;speak(m)}
+function hint(){if(G.ok)return;G.used=true;G.hints++;G.stage=Math.min(G.stage+1,2);say(hints(G.t)[G.stage-1]);game()}
+/* ===== SÜRÜKLE-BIRAK + DOKUN-SEÇ ===== */
+function pd(e,id){e.preventDefault();dr={id,x:e.clientX,y:e.clientY,mv:false,cl:null,el:e.currentTarget};try{dr.el.setPointerCapture(e.pointerId)}catch(x){}}
+function pm(e){if(!dr)return;if(!dr.mv&&Math.hypot(e.clientX-dr.x,e.clientY-dr.y)>8){dr.mv=true;dr.cl=dr.el.cloneNode(true);dr.cl.className='pc drag';dr.cl.style.width=dr.el.offsetWidth+'px';document.body.appendChild(dr.cl)}
+if(dr.cl){dr.cl.style.left=e.clientX+'px';dr.cl.style.top=e.clientY+'px'}}
+function pc2(){if(dr&&dr.cl)dr.cl.remove();dr=null}
+function pu(e){if(!dr)return;const d=dr;pc2();if(!d.mv){G.sel=G.sel===d.id?null:d.id;game();return}
+if(document.elementsFromPoint(e.clientX,e.clientY).some(x=>x.classList&&x.classList.contains('hz')))place(d.id);else{G.sel=null;say('Parçayı boşluğa bırakabilirsin.');game()}}
+function hzClick(){if(G.sel)place(G.sel);else{say('Önce bir parçaya dokun, sonra boşluğa dokun.');game()}}
+const place=id=>answer(id);
+/* ===== CEVAP KONTROLÜ ===== */
+function answer(id){if(G.ok||G.off.includes(id))return;
+if(id===ans(G.t)){G.ok=true;S.t++;S.dn[G.t.id]=1;G.done++;const k=G.wrong.length?'r':G.used?'h':'f';S[k]++;if(G.stage>=1)S.fm++;if(G.stage>=2)S.fn++;if(G.t.ty==='odd')S.od++;save();
+tone(523);tone(659,.15);tone(784,.3);say((G.wrong.length?'Yeni ipucunu kullanarak fikrini geliştirdin! ':'')+pk(GOOD));game()}
+else{G.wrong.push(id);G.off.push(id);G.sel=null;G.stage=Math.min(G.stage+1,2);G.shake=true;tone(330);say(pk(MIS)+' '+hints(G.t)[G.stage-1]);game()}}
+function why(k){S.rc++;S.rs[k]++;save();G.rdone=true;tone(660);say('Güzel açıkladın! Sence bu parça neden uygun?'.slice(0,0)||'Seçimini güzel açıkladın!');game()}
+function nextT(){G.i++;if(G.i>=T[G.w-1].length)return end();tq();speak(G.t.ty?task(G.t):'Eksik parçayı bul.')}
+function end(){cur='end';const all=[1,2,3,4,5].every(w=>wd(S,w));go(`<h1>${all?'Büyük Tamamlayıcı!':'Dünya Tamam!'}</h1><div style="width:130px;margin:auto">${MUCIT}</div><p class="say">Bu turda ${G.done} görevi tamamladın ve ${G.hints} kez ipucu kullandın. İpucu kullanmak ve fikrini değiştirmek harika bir düşünme yolu!</p>${bd()}<p>${G.w<5?`<button class="btn g" onclick="start(${G.w+1})">Sonraki dünya</button>`:''}<button class="btn b" onclick="start(${G.w})">Yeniden oyna</button><button class="btn s" onclick="menu()">Ana Menü</button></p>`);speak('Dünyayı tamamladın, minik mucit!')}
+function teacher(){cur='teacher';const dn=Object.keys(S.dn).length;
+go(`<div class="top"><button class="btn s" onclick="menu()">Ana Menü</button>${sb()}</div><h2>Öğretmen Paneli</h2><table><tr><td>Toplam tamamlanan görev</td><td><b>${S.t}</b> (benzersiz: ${dn} / 30)</td></tr><tr><td>İlk seçimde doğru</td><td><b>${S.f}</b></td></tr><tr><td>İpucu kullanarak tamamlanan</td><td><b>${S.h}</b></td></tr><tr><td>Yanlış denemeden sonra tamamlanan (tahmin gözden geçirme)</td><td><b>${S.r}</b></td></tr><tr><td>Gerekçe seçimleri</td><td><b>${S.rc}</b> (şekil: ${S.rs[0]}, işlev: ${S.rs[1]}, eleme: ${S.rs[2]})</td></tr><tr><td>Tamamlanan dünyalar</td><td><b>${[1,2,3,4,5].map(w=>`D${w}: ${wd(S,w)?'✓':'–'}`).join(' ')}</b></td></tr></table>
+<h2>Öğrenme çıktısı göstergeleri</h2><table><tr><td>Biçimsel özellikleri fark etme</td><td>${S.f} ilk seçimde doğru</td></tr><tr><td>Parça-bütün ilişkisi kurma</td><td>${S.t} tamamlanan görev</td></tr><tr><td>İşlevsel ipuçlarını kullanma</td><td>${S.fn} görevde 2. ipucu görüldü</td></tr><tr><td>Uygun olmayan parçayı eleme</td><td>${S.od} doğru eleme</td></tr><tr><td>Tahmini gözden geçirme</td><td>${S.r} görev</td></tr><tr><td>Seçimini gerekçelendirme</td><td>${S.rc} gerekçe</td></tr></table>
+<p class="note">Bu veriler yalnızca oyun içindeki davranışlara dayanır; çocuğun genel gelişimi hakkında yargı oluşturmaz. Hiçbir kişisel veri toplanmaz; kayıtlar yalnızca bu cihazın tarayıcısında durur.</p><button class="btn s" onclick="resetAll()">Verileri sıfırla</button>`)}
+function resetAll(){if(confirm('Tüm ilerleme ve sonuçlar silinecek. Emin misin?')){const s=S.snd;S=fresh();S.snd=s;save();menu()}}
+welcome();
+</script></body></html>
